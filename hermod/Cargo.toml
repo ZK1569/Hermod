@@ -1,0 +1,8 @@
+[package]
+name = "hermod"
+version = "0.1.0"
+edition = "2021"
+authors.workspace = true
+
+[dependencies]
+network = { version = "0.1.0", path = "../network" }
