@@ -1,10 +1,12 @@
-[workspace]
-members = [
-    "calice",
-    "hermod"
-]
-resolver = "2"
-default-members = ["hermod"]
-
-[workspace.package]
+[package]
+name = "hermod"
+version = "0.1.0"
+edition = "2021"
 authors = ["Cristian Ursu"]
+
+[dependencies]
+env_logger = "0.11.5"
+log = "0.4.22"
+serde = { version = "1.0.210", features = ["derive"] }
+toml = "0.8.19"
+clap = { version = "4.5.20", features = ["cargo", "derive"] }

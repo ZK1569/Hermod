@@ -5,6 +5,7 @@ use log::{debug, error};
 use utils::{commands, starter};
 
 mod models;
+mod tests;
 mod utils;
 
 fn main() {

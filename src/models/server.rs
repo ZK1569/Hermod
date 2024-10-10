@@ -3,7 +3,7 @@ use std::{
     net::{Shutdown, TcpListener, TcpStream},
 };
 
-use calice::models::network::Network;
+use super::network::Network;
 
 pub struct Server {
     pub network: Network,
