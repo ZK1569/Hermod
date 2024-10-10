@@ -1,7 +1,9 @@
 use std::{
-    io::Error,
-    net::{Shutdown, TcpListener, TcpStream},
+    io,
+    net::{TcpListener, TcpStream},
 };
+
+use crate::types::communication::Communication;
 
 use super::network::Network;
 
@@ -16,11 +18,11 @@ impl Server {
         }
     }
 
-    pub fn start_server(&self) -> Result<TcpListener, Error> {
+    pub fn start_server(&self) -> Result<TcpListener, io::Error> {
         TcpListener::bind(self.network.get_fulladdress())
     }
 
-    pub fn close_connection(stream: &mut TcpStream) {
-        let _ = stream.shutdown(Shutdown::Both);
+    pub fn handle_client(stream: &mut TcpStream) -> Result<Communication, io::Error> {
+        todo!("Client handler")
     }
 }
