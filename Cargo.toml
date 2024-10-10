@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "network",
+    "calice",
     "hermod"
 ]
 resolver = "2"
