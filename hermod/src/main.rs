@@ -8,8 +8,6 @@ mod models;
 mod utils;
 
 fn main() {
-    env_logger::Builder::from_env(Env::default().default_filter_or("debug")).init();
-
     let command_result = commands::get_commands();
     let command = match command_result {
         Ok(c) => c,
@@ -19,7 +17,13 @@ fn main() {
         }
     };
 
+    env_logger::Builder::from_env(Env::default().default_filter_or(if command.debug {
+        "debug"
+    } else {
+        "warn"
+    }))
+    .init();
+
     starter::start_message();
-    let _config = utils::config::Config::read();
-    debug!("info : {}", command);
+    debug!("Inputed commands : {}", command);
 }

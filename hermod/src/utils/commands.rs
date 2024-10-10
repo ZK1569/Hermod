@@ -5,21 +5,23 @@ use std::{
     ops::RangeInclusive,
 };
 
-use clap::{command, Arg, Command};
+use clap::{command, Arg, ArgAction, Command};
 
-#[derive(Debug)]
+pub struct CommandArg {
+    pub execution_mod: ExecMod,
+    pub debug: bool,
+}
+
 pub enum ExecMod {
     Server(ServerMod),
     Client(ClientMod),
 }
 
-#[derive(Debug)]
 pub struct ServerMod {
     pub address: Ipv4Addr,
     pub port: u16,
 }
 
-#[derive(Debug)]
 pub struct ClientMod {
     pub address: Ipv4Addr,
     pub port: u16,
@@ -38,13 +40,27 @@ impl fmt::Display for ExecMod {
     }
 }
 
-pub fn get_commands() -> Result<ExecMod, io::Error> {
+impl fmt::Display for CommandArg {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} debug: {}", self.execution_mod, self.debug)
+    }
+}
+
+pub fn get_commands() -> Result<CommandArg, io::Error> {
     let matches = command!()
         .subcommand_required(true)
         .arg_required_else_help(true)
+        .arg(
+            Arg::new("debug")
+                .short('d')
+                .long("debug")
+                .help("Displays more information on internal status")
+                .action(ArgAction::SetTrue),
+        )
         .subcommand(
             Command::new("server")
-                .about("run as server")
+                // TODO: Change the about info
+                .about("Run as server")
                 .arg(
                     Arg::new("address")
                         .short('a')
@@ -57,14 +73,15 @@ pub fn get_commands() -> Result<ExecMod, io::Error> {
                     Arg::new("port")
                         .short('p')
                         .long("port")
-                        .required(true)
                         .help("The port on which the server is running")
+                        .default_value("8080")
                         .value_parser(port_in_range),
                 ),
         )
         .subcommand(
             Command::new("client")
-                .about("run as client")
+                // TODO: Change the about info
+                .about("Run as client")
                 .arg(
                     Arg::new("address")
                         .short('a')
@@ -77,8 +94,8 @@ pub fn get_commands() -> Result<ExecMod, io::Error> {
                     Arg::new("port")
                         .short('p')
                         .long("port")
-                        .required(true)
                         .help("The host port on which the server is running")
+                        .default_value("8080")
                         .value_parser(port_in_range),
                 ),
         )
@@ -122,7 +139,10 @@ pub fn get_commands() -> Result<ExecMod, io::Error> {
         _ => unreachable!("an unknown command is used"),
     };
 
-    Ok(exec)
+    Ok(CommandArg {
+        execution_mod: exec,
+        debug: matches.get_flag("debug"),
+    })
 }
 
 const PORT_RANGE: RangeInclusive<usize> = 1..=65535;
