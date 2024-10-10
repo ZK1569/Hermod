@@ -7,6 +7,6 @@ authors.workspace = true
 [dependencies]
 env_logger = "0.11.5"
 log = "0.4.22"
-network = { version = "0.1.0", path = "../network" }
+calice = { version = "0.1.0", path = "../calice" }
 serde = { version = "1.0.210", features = ["derive"] }
 toml = "0.8.19"
