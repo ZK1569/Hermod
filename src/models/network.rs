@@ -1,8 +1,9 @@
 use std::{
     io::{self, Read, Write},
-    net::{Shutdown, TcpStream},
+    net::{IpAddr, Ipv4Addr, Shutdown, TcpStream},
 };
 
+use local_ip_address::local_ip;
 use log::{debug, error, trace};
 
 use crate::types::communication::Communication;
@@ -109,5 +110,28 @@ impl Network {
 
     pub fn close_connection(stream: &mut TcpStream) {
         let _ = stream.shutdown(Shutdown::Both);
+    }
+
+    pub fn get_local_ip() -> Result<Ipv4Addr, io::Error> {
+        let address = match local_ip() {
+            Ok(a) => a,
+            Err(_) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::NotConnected,
+                    "You are not on a local network",
+                ))
+            }
+        };
+        let ipv4: Ipv4Addr = match address {
+            IpAddr::V4(ipv4) => ipv4,
+            _ => {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Your ip address is not ipv4",
+                ))
+            }
+        };
+
+        Ok(ipv4)
     }
 }

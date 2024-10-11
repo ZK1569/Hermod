@@ -1,8 +1,8 @@
 use std::process;
 
 use env_logger::Env;
-use log::{debug, error, info, warn};
-use models::{client::Client, server::Server};
+use log::{debug, error, info};
+use models::{client::Client, network::Network, server::Server};
 use utils::{commands, starter};
 
 mod models;
@@ -23,7 +23,7 @@ fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or(if command.debug {
         "debug"
     } else {
-        "warn"
+        "info"
     }))
     .init();
 
@@ -43,17 +43,31 @@ fn main() {
                     process::exit(1);
                 }
             };
+
+            let ip = match Network::get_local_ip() {
+                Ok(ip) => ip,
+                Err(err) => {
+                    error!("{}", err);
+                    process::exit(1);
+                }
+            };
+
+            info!(
+                "Your server is running on address: {} port: {}",
+                ip, server_info.port
+            );
+
             for stream in listener.incoming() {
                 match stream {
                     Ok(mut s) => match Server::handle_client(&mut s) {
                         Ok(_) => {}
-                        Err(err) => warn!(
+                        Err(err) => error!(
                             "An unexpected error occurred during communication with the client... \n{}",
                             err
                         ),
                     },
                     Err(err) => {
-                        warn!("A strange customer tried to connect... \n{}", err)
+                        error!("A strange customer tried to connect... \n{}", err)
                     }
                 }
             }
@@ -66,7 +80,7 @@ fn main() {
 
             match client.run_client() {
                 Ok(_) => info!("No errors encountered"),
-                Err(e) => info!("An error has occurred... \n{}", e),
+                Err(e) => error!("An error has occurred... \n{}", e),
             }
         }
     }

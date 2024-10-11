@@ -1,7 +1,7 @@
 use core::fmt;
 use std::{
     io,
-    net::{AddrParseError, Ipv4Addr},
+    net::{AddrParseError, IpAddr, Ipv4Addr},
     ops::RangeInclusive,
 };
 
@@ -18,7 +18,6 @@ pub enum ExecMod {
 }
 
 pub struct ServerMod {
-    pub address: Ipv4Addr,
     pub port: u16,
 }
 
@@ -31,10 +30,10 @@ impl fmt::Display for ExecMod {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ExecMod::Server(s) => {
-                write!(f, "Server mode - address: {}, port: {}", s.address, s.port)
+                write!(f, "Server mode - port: {}", s.port)
             }
             ExecMod::Client(c) => {
-                write!(f, "Client mode - address: {}, port: {}", c.address, c.port)
+                write!(f, "Client mode - target: {}, port: {}", c.address, c.port)
             }
         }
     }
@@ -61,14 +60,6 @@ pub fn get_commands() -> Result<CommandArg, io::Error> {
             Command::new("server")
                 // TODO: Change the about info
                 .about("Run as server")
-                .arg(
-                    Arg::new("address")
-                        .short('a')
-                        .long("address")
-                        .required(true)
-                        .help("Your local ip")
-                        .value_parser(check_id_address),
-                )
                 .arg(
                     Arg::new("port")
                         .short('p')
@@ -103,21 +94,12 @@ pub fn get_commands() -> Result<CommandArg, io::Error> {
 
     let exec: ExecMod = match matches.subcommand() {
         Some(("server", sub_matches)) => {
-            let address = match sub_matches.get_one::<Ipv4Addr>("address") {
-                Some(a) => a.clone(),
-                None => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "User did not provide correct ip address",
-                    ))
-                }
-            };
             let port = match sub_matches.get_one::<u16>("port") {
                 Some(p) => p.clone(),
                 None => 8080,
             };
 
-            ExecMod::Server(ServerMod { address, port })
+            ExecMod::Server(ServerMod { port })
         }
         Some(("client", sub_matches)) => {
             let address = match sub_matches.get_one::<Ipv4Addr>("address") {
