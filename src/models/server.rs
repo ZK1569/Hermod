@@ -3,6 +3,8 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 
+use log::{debug, error};
+
 use crate::types::communication::Communication;
 
 use super::network::Network;
@@ -22,7 +24,29 @@ impl Server {
         TcpListener::bind(self.network.get_fulladdress())
     }
 
-    pub fn handle_client(stream: &mut TcpStream) -> Result<Communication, io::Error> {
-        todo!("Client handler")
+    pub fn handle_client(stream: &mut TcpStream) -> Result<(), io::Error> {
+        let communication_result = Network::read_message(stream);
+
+        match communication_result {
+            Ok((communication, data)) => match (communication) {
+                Communication::CommunicationText(comm_text) => {
+                    debug!("Un text recu");
+                    let message = String::from_utf8_lossy(&data);
+                    debug!("le message est {}", message)
+                }
+                Communication::CommunicationFile(comm_file) => {
+                    debug!("Un text recu")
+                }
+                Communication::CommunicationCertificate(comm_cert) => {
+                    debug!("Un text recu")
+                }
+            },
+            Err(err) => {
+                error!("A message received mail there has been an error ...");
+            }
+        }
+
+        // TODO: Display message recived
+        Ok(())
     }
 }

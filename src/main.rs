@@ -1,8 +1,8 @@
 use std::process;
 
 use env_logger::Env;
-use log::{debug, error, warn};
-use models::server::Server;
+use log::{debug, error, info, warn};
+use models::{client::Client, server::Server};
 use utils::{commands, starter};
 
 mod models;
@@ -39,7 +39,7 @@ fn main() {
             let listener = match listener_result {
                 Ok(r) => r,
                 Err(err) => {
-                    error!("Server failed to start ... \n{err}");
+                    error!("Server failed to start... \n{err}");
                     process::exit(1);
                 }
             };
@@ -47,16 +47,27 @@ fn main() {
                 match stream {
                     Ok(mut s) => match Server::handle_client(&mut s) {
                         Ok(_) => {}
-                        Err(err) => warn!("Data received from the client has a probleme! {}", err),
+                        Err(err) => warn!(
+                            "An unexpected error occurred during communication with the client... \n{}",
+                            err
+                        ),
                     },
                     Err(err) => {
-                        warn!("Something went wrong with a client ! {}", err)
+                        warn!("A strange customer tried to connect... \n{}", err)
                     }
                 }
             }
         }
-        commands::ExecMod::Client(client) => {
-            todo!()
+        commands::ExecMod::Client(client_info) => {
+            let client = Client::new(
+                client_info.address.to_string(),
+                client_info.port.to_string(),
+            );
+
+            match client.run_client() {
+                Ok(_) => info!("No errors encountered"),
+                Err(e) => info!("An error has occurred... \n{}", e),
+            }
         }
     }
 }

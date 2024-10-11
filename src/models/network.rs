@@ -3,12 +3,13 @@ use std::{
     net::{Shutdown, TcpStream},
 };
 
-use log::{debug, error, warn};
+use log::{debug, error, trace};
 
 use crate::types::communication::Communication;
 
 #[derive(Debug)]
 pub struct Network {
+    // TODO: Pourquoi pas changer ca en ipv4address ?
     server_address: String,
     port: String,
 }
@@ -47,12 +48,9 @@ impl Network {
     pub fn read_message(stream: &mut TcpStream) -> Result<(Communication, Vec<u8>), io::Error> {
         let mut total_len_buf = [0; 4];
         match stream.read_exact(&mut total_len_buf) {
-            Ok(_) => debug!("Start getting total message size"),
+            Ok(_) => debug!("Received total message size"),
             Err(err) => {
-                error!(
-                    "Something's wrong, I can't receive the total message size... {}",
-                    err
-                );
+                error!("The maximum message size could not be received {}", err);
                 return Err(err);
             }
         };
@@ -60,12 +58,9 @@ impl Network {
 
         let mut json_len_buf = [0; 4];
         match stream.read_exact(&mut json_len_buf) {
-            Ok(_) => debug!("Start getting json size"),
+            Ok(_) => debug!("Received json message size"),
             Err(err) => {
-                error!(
-                    "Something's wrong, I can't receive the total json size... {}",
-                    err
-                );
+                error!("The json message size could not be received {}", err);
                 return Err(err);
             }
         };
@@ -82,15 +77,15 @@ impl Network {
 
         let mut sbuf = vec![0_u8; json_message_size as usize];
         match stream.read_exact(&mut sbuf) {
-            Ok(_) => debug!("Start getting json"),
+            Ok(_) => debug!("Received json"),
             Err(err) => {
-                error!("Something's wrong, I can't receive the json... {}", err);
+                error!("The json message size could not be received {}", err);
                 return Err(err);
             }
         };
         let s = String::from_utf8_lossy(&sbuf);
 
-        debug!("Message received : {s}");
+        trace!("Message received : {s}");
 
         let fragment_request = serde_json::from_str(&s);
         let fragment = match fragment_request {
