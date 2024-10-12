@@ -42,7 +42,7 @@ impl Server {
                 }
             },
             Err(err) => {
-                error!("A message received mail there has been an error ...");
+                error!("A message received but there has been an error ...");
             }
         }
 

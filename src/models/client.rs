@@ -1,5 +1,8 @@
 use crate::types::communication::{Communication, CommunicationText};
-use std::{io, net::TcpStream};
+use std::{
+    io,
+    net::{Ipv4Addr, TcpStream},
+};
 
 use super::network::Network;
 
@@ -8,9 +11,9 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(address: String, port: String) -> Client {
+    pub fn new(address: Ipv4Addr, port: String) -> Client {
         Client {
-            network: Network::new(address, port),
+            network: Network::new(address.to_string(), port),
         }
     }
 

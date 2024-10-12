@@ -73,10 +73,7 @@ fn main() {
             }
         }
         commands::ExecMod::Client(client_info) => {
-            let client = Client::new(
-                client_info.address.to_string(),
-                client_info.port.to_string(),
-            );
+            let client = Client::new(client_info.address, client_info.port.to_string());
 
             match client.run_client() {
                 Ok(_) => info!("No errors encountered"),
