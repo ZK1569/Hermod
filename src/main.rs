@@ -59,7 +59,7 @@ fn main() {
 
             for stream in listener.incoming() {
                 match stream {
-                    Ok(mut s) => match Server::handle_client(&mut s) {
+                    Ok(s) => match Server::handle_client(s) {
                         Ok(_) => {}
                         Err(err) => error!(
                             "An unexpected error occurred during communication with the client... \n{}",
