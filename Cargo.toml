@@ -10,3 +10,6 @@ log = "0.4.22"
 serde = { version = "1.0.210", features = ["derive"] }
 toml = "0.8.19"
 clap = { version = "4.5.20", features = ["cargo", "derive"] }
+serde_json = "1.0.128"
+local-ip-address = "0.6.3"
+thiserror = "1.0.64"
