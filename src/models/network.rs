@@ -4,22 +4,21 @@ use std::{
 };
 
 use local_ip_address::local_ip;
-use log::{debug, error, trace};
+use log::{error, trace};
 
 use crate::types::communication::Communication;
 
 #[derive(Debug)]
 pub struct Network {
-    // TODO: Pourquoi pas changer ca en ipv4address ?
-    server_address: String,
+    server_address: Ipv4Addr,
     port: String,
 }
 
 impl Network {
-    pub fn new(server_address: String, port: String) -> Network {
+    pub fn new(server_address: Ipv4Addr, port: &str) -> Network {
         Network {
             server_address,
-            port,
+            port: port.to_string(),
         }
     }
 
@@ -30,7 +29,7 @@ impl Network {
     pub fn send_message(
         stream: &mut TcpStream,
         communication: &Communication,
-        data: &Vec<u8>,
+        data: &[u8],
     ) -> Result<String, io::Error> {
         let json_message = serde_json::to_string(&communication)?;
 
@@ -49,17 +48,19 @@ impl Network {
     pub fn read_message(stream: &mut TcpStream) -> Result<(Communication, Vec<u8>), io::Error> {
         let mut total_len_buf = [0; 4];
         match stream.read_exact(&mut total_len_buf) {
-            Ok(_) => debug!("Received total message size"),
-            Err(err) => {
-                error!("The maximum message size could not be received {}", err);
-                return Err(err);
+            Ok(_) => trace!("Received total message size"),
+            Err(_) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::ConnectionAborted,
+                    "Communication done",
+                ));
             }
         };
         let total_message_size = u32::from_be_bytes(total_len_buf);
 
         let mut json_len_buf = [0; 4];
         match stream.read_exact(&mut json_len_buf) {
-            Ok(_) => debug!("Received json message size"),
+            Ok(_) => trace!("Received json message size"),
             Err(err) => {
                 error!("The json message size could not be received {}", err);
                 return Err(err);
@@ -69,7 +70,7 @@ impl Network {
 
         if total_message_size < json_message_size {
             return Err(io::Error::new(
-                io::ErrorKind::Other,
+                io::ErrorKind::InvalidData,
                 "Json message size if bigger than total message size",
             ));
         }
@@ -78,18 +79,18 @@ impl Network {
 
         let mut sbuf = vec![0_u8; json_message_size as usize];
         match stream.read_exact(&mut sbuf) {
-            Ok(_) => debug!("Received json"),
+            Ok(_) => trace!("Received json"),
             Err(err) => {
-                error!("The json message size could not be received {}", err);
+                error!("The json message could not be received {}", err);
                 return Err(err);
             }
         };
         let s = String::from_utf8_lossy(&sbuf);
 
-        trace!("Message received : {s}");
+        trace!("Json received : {s}");
 
-        let fragment_request = serde_json::from_str(&s);
-        let fragment = match fragment_request {
+        let communication_request = serde_json::from_str(&s);
+        let communication = match communication_request {
             Ok(r) => r,
             Err(_) => {
                 return Err(io::Error::new(
@@ -105,7 +106,7 @@ impl Network {
             return Err(e.into());
         }
 
-        Ok((fragment, data))
+        Ok((communication, data))
     }
 
     pub fn close_connection(stream: &mut TcpStream) {

@@ -1,7 +1,7 @@
 use core::fmt;
 use std::{
     io,
-    net::{AddrParseError, IpAddr, Ipv4Addr},
+    net::{AddrParseError, Ipv4Addr},
     ops::RangeInclusive,
 };
 

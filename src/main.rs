@@ -1,7 +1,7 @@
-use std::process;
+use std::{io, process};
 
 use env_logger::Env;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use models::{client::Client, network::Network, server::Server};
 use utils::{commands, starter};
 
@@ -32,7 +32,7 @@ fn main() {
 
     match command.execution_mod {
         commands::ExecMod::Server(server_info) => {
-            let server = Server::new(server_info.port.to_string());
+            let server = Server::new(&server_info.port.to_string());
 
             let listener_result = server.start_server();
 
@@ -61,10 +61,19 @@ fn main() {
                 match stream {
                     Ok(s) => match Server::handle_client(s) {
                         Ok(_) => {}
-                        Err(err) => error!(
-                            "An unexpected error occurred during communication with the client... \n{}",
-                            err
-                        ),
+                        Err(err) => {
+                            if err.kind() == io::ErrorKind::InvalidData {
+                                warn!("Message lost");
+                                continue;
+                            } else if err.kind() == io::ErrorKind::Other {
+                                error!("Unknown error")
+                            }
+                            error!(
+                                "An unexpected error occurred during communication with the client... \n{}",
+                                err
+                            );
+                            process::exit(1);
+                        }
                     },
                     Err(err) => {
                         error!("A strange customer tried to connect... \n{}", err)
@@ -73,7 +82,7 @@ fn main() {
             }
         }
         commands::ExecMod::Client(client_info) => {
-            let client = Client::new(client_info.address, client_info.port.to_string());
+            let client = Client::new(client_info.address, &client_info.port.to_string());
 
             match client.run_client() {
                 Ok(_) => info!("No errors encountered"),

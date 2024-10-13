@@ -1,10 +1,10 @@
 use std::{
     io,
-    net::{TcpListener, TcpStream},
+    net::{Ipv4Addr, TcpListener, TcpStream},
     thread,
 };
 
-use log::{debug, error};
+use log::{debug, info, warn};
 
 use crate::types::communication::{Communication, CommunicationText};
 
@@ -15,9 +15,9 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(port: String) -> Server {
+    pub fn new(port: &str) -> Server {
         Server {
-            network: Network::new("127.0.0.1".to_owned(), port),
+            network: Network::new(Ipv4Addr::new(127, 0, 0, 1), port),
         }
     }
 
@@ -26,30 +26,32 @@ impl Server {
     }
 
     pub fn handle_client(mut stream: TcpStream) -> Result<(), io::Error> {
+        info!("Someone has connected to the server");
+
+        // FIX: Peut avoir une meilleur solution
         let mut stream_clone = stream.try_clone()?;
 
-        let handle_message = thread::spawn(move || loop {
-            match Network::read_message(&mut stream) {
-                Ok((communication, data)) => match communication {
-                    Communication::CommunicationText(_comm_text) => {
-                        debug!("Un text recu");
-                        let message = String::from_utf8_lossy(&data);
-                        debug!("le message est {}", message)
-                    }
-                    Communication::CommunicationFile(_comm_file) => {
-                        debug!("Un text recu")
-                    }
-                    Communication::CommunicationCertificate(_comm_cert) => {
-                        debug!("Un text recu")
-                    }
-                },
-                Err(_err) => {
-                    error!("A message received but there has been an error ...");
+        let handle_message = thread::spawn(move || -> Result<(), io::Error> {
+            loop {
+                match Network::read_message(&mut stream) {
+                    Ok((communication, data)) => match communication {
+                        Communication::CommunicationText(_comm_text) => {
+                            let message = String::from_utf8_lossy(&data);
+                            println!("client: {}", message)
+                        }
+                        Communication::CommunicationFile(_comm_file) => {
+                            debug!("Un fichier recu")
+                        }
+                        Communication::CommunicationCertificate(_comm_cert) => {
+                            debug!("Un cert recu")
+                        }
+                    },
+                    Err(err) => return Err(err),
                 }
             }
         });
 
-        let handle_input = thread::spawn(move || loop {
+        let _ = thread::spawn(move || loop {
             let init_message = CommunicationText {};
 
             let enum_network = Communication::CommunicationText(init_message);
@@ -65,38 +67,28 @@ impl Server {
             Network::send_message(&mut stream_clone, &enum_network, &mut data_tmp).unwrap();
         });
 
-        loop {
-            if handle_message.is_finished() && handle_input.is_finished() {
-                break;
+        match handle_message.join() {
+            Ok(thread) => match thread {
+                Ok(_) => {}
+                Err(err) => {
+                    if err.kind() == io::ErrorKind::ConnectionAborted {
+                        warn!("End of communication");
+                        return Ok(());
+                    } else if err.kind() == io::ErrorKind::InvalidData {
+                        warn!("Message lost");
+                        return Err(err);
+                    }
+                    return Err(io::Error::new(io::ErrorKind::Other, err));
+                }
+            },
+            Err(_) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "An error has occurred on the thread",
+                ));
             }
-        }
+        };
 
         Ok(())
     }
-
-    // pub fn handle_client(stream: &mut TcpStream) -> Result<(), io::Error> {
-    //     let communication_result = Network::read_message(stream);
-    //
-    //     match communication_result {
-    //         Ok((communication, data)) => match (communication) {
-    //             Communication::CommunicationText(comm_text) => {
-    //                 debug!("Un text recu");
-    //                 let message = String::from_utf8_lossy(&data);
-    //                 debug!("le message est {}", message)
-    //             }
-    //             Communication::CommunicationFile(comm_file) => {
-    //                 debug!("Un text recu")
-    //             }
-    //             Communication::CommunicationCertificate(comm_cert) => {
-    //                 debug!("Un text recu")
-    //             }
-    //         },
-    //         Err(err) => {
-    //             error!("A message received but there has been an error ...");
-    //         }
-    //     }
-    //
-    //     // TODO: Display message recived
-    //     Ok(())
-    // }
 }
