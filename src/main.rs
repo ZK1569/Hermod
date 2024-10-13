@@ -1,8 +1,8 @@
 use std::{io, process};
 
 use env_logger::Env;
-use log::{debug, error, info, warn};
-use models::{client::Client, network::Network, server::Server};
+use log::{debug, error, info};
+use models::{client::Client, server::Server};
 use utils::{commands, starter};
 
 mod models;
@@ -34,50 +34,17 @@ fn main() {
         commands::ExecMod::Server(server_info) => {
             let server = Server::new(&server_info.port.to_string());
 
-            let listener_result = server.start_server();
-
-            let listener = match listener_result {
-                Ok(r) => r,
+            match server.run_sever() {
+                Ok(_) => info!("No errors encountered"),
                 Err(err) => {
-                    error!("Server failed to start... \n{err}");
-                    process::exit(1);
-                }
-            };
-
-            let ip = match Network::get_local_ip() {
-                Ok(ip) => ip,
-                Err(err) => {
-                    error!("{}", err);
-                    process::exit(1);
-                }
-            };
-
-            info!(
-                "Your server is running on address: {} port: {}",
-                ip, server_info.port
-            );
-
-            for stream in listener.incoming() {
-                match stream {
-                    Ok(s) => match Server::handle_client(s) {
-                        Ok(_) => {}
-                        Err(err) => {
-                            if err.kind() == io::ErrorKind::InvalidData {
-                                warn!("Message lost");
-                                continue;
-                            } else if err.kind() == io::ErrorKind::Other {
-                                error!("Unknown error")
-                            }
-                            error!(
-                                "An unexpected error occurred during communication with the client... \n{}",
-                                err
-                            );
-                            process::exit(1);
-                        }
-                    },
-                    Err(err) => {
-                        error!("A strange customer tried to connect... \n{}", err)
+                    if err.kind() == io::ErrorKind::ConnectionRefused {
+                        error!("Server failed to start... \n{err}");
+                        process::exit(1);
+                    } else if err.kind() == io::ErrorKind::AddrNotAvailable {
+                        error!("The ip address is not accessible, please check that you are on a network.");
+                        process::exit(1);
                     }
+                    error!("An error has occurred... \n{}", err)
                 }
             }
         }

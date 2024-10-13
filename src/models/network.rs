@@ -1,17 +1,18 @@
 use std::{
     io::{self, Read, Write},
     net::{IpAddr, Ipv4Addr, Shutdown, TcpStream},
+    thread,
 };
 
 use local_ip_address::local_ip;
-use log::{error, trace};
+use log::{debug, error, trace};
 
-use crate::types::communication::Communication;
+use crate::types::communication::{Communication, CommunicationText};
 
 #[derive(Debug)]
 pub struct Network {
-    server_address: Ipv4Addr,
-    port: String,
+    pub server_address: Ipv4Addr,
+    pub port: String,
 }
 
 impl Network {
@@ -26,7 +27,72 @@ impl Network {
         format!("{}:{}", self.server_address, self.port)
     }
 
-    pub fn send_message(
+    pub fn communication(mut stream: TcpStream) -> Result<(), io::Error> {
+        // FIX: Peut avoir une meilleur solution que try_clone()
+        let mut stream_clone = stream.try_clone()?;
+
+        let handle_message = thread::spawn(move || -> Result<(), io::Error> {
+            loop {
+                match Network::read_message(&mut stream) {
+                    Ok((communication, data)) => match communication {
+                        Communication::CommunicationText(_comm_text) => {
+                            // TODO: Show message
+                            let message = String::from_utf8_lossy(&data);
+                            println!("other: {}", message)
+                        }
+                        Communication::CommunicationFile(_comm_file) => {
+                            // TODO: Download file
+                            debug!("Un fichier recu")
+                        }
+                        Communication::CommunicationCertificate(_comm_cert) => {
+                            // TODO: Check cert
+                            debug!("Un cert recu")
+                        }
+                    },
+                    Err(err) => return Err(err),
+                }
+            }
+        });
+
+        let _handle_input = thread::spawn(move || loop {
+            let init_message = CommunicationText {};
+
+            let enum_network = Communication::CommunicationText(init_message);
+
+            let mut guess = String::new();
+
+            io::stdin()
+                .read_line(&mut guess)
+                .expect("failed to readline");
+            let mut data_tmp = guess.as_bytes();
+
+            Network::send_message(&mut stream_clone, &enum_network, &mut data_tmp).unwrap();
+        });
+
+        match handle_message.join() {
+            Ok(thread) => match thread {
+                Ok(_) => {}
+                Err(err) => {
+                    if err.kind() == io::ErrorKind::ConnectionAborted {
+                        return Ok(());
+                    } else if err.kind() == io::ErrorKind::InvalidData {
+                        return Err(err);
+                    }
+                    return Err(io::Error::new(io::ErrorKind::Other, err));
+                }
+            },
+            Err(_) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "An error has occurred on the thread",
+                ));
+            }
+        };
+
+        Ok(())
+    }
+
+    fn send_message(
         stream: &mut TcpStream,
         communication: &Communication,
         data: &[u8],
@@ -45,7 +111,7 @@ impl Network {
         Ok(json_message)
     }
 
-    pub fn read_message(stream: &mut TcpStream) -> Result<(Communication, Vec<u8>), io::Error> {
+    fn read_message(stream: &mut TcpStream) -> Result<(Communication, Vec<u8>), io::Error> {
         let mut total_len_buf = [0; 4];
         match stream.read_exact(&mut total_len_buf) {
             Ok(_) => trace!("Received total message size"),
