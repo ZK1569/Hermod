@@ -11,20 +11,20 @@ use crate::types::communication::{Communication, CommunicationText};
 
 #[derive(Debug)]
 pub struct Network {
-    pub server_address: Ipv4Addr,
+    pub address: Ipv4Addr,
     pub port: String,
 }
 
 impl Network {
-    pub fn new(server_address: Ipv4Addr, port: &str) -> Network {
+    pub fn new(address: Ipv4Addr, port: &str) -> Network {
         Network {
-            server_address,
+            address,
             port: port.to_string(),
         }
     }
 
     pub fn get_fulladdress(&self) -> String {
-        format!("{}:{}", self.server_address, self.port)
+        format!("{}:{}", self.address, self.port)
     }
 
     pub fn communication(mut stream: TcpStream) -> Result<(), io::Error> {

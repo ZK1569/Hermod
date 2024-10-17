@@ -12,9 +12,9 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(port: &str) -> Server {
+    pub fn new(address: Ipv4Addr, port: &str) -> Server {
         Server {
-            network: Network::new(Ipv4Addr::new(127, 0, 0, 1), port),
+            network: Network::new(address, port),
         }
     }
 
@@ -33,17 +33,9 @@ impl Server {
             }
         };
 
-        let ip = match Network::get_local_ip() {
-            Ok(ip) => ip,
-            Err(err) => {
-                error!("{}", err);
-                return Err(io::Error::new(io::ErrorKind::AddrNotAvailable, err));
-            }
-        };
-
         info!(
             "Your server is running on address: {} port: {}",
-            ip, self.network.port
+            self.network.address, self.network.port
         );
 
         // TODO: Change to have only one client connected
