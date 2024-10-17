@@ -46,25 +46,14 @@ impl Server {
             ip, self.network.port
         );
 
+        // TODO: Change to have only one client connected
         for stream in listener.incoming() {
             info!("A new customer is connected ...");
 
             match stream {
                 Ok(s) => match Network::communication(s) {
                     Ok(_) => warn!("The customer has left the conversation"),
-                    Err(err) => {
-                        if err.kind() == io::ErrorKind::InvalidData {
-                            warn!("Message lost");
-                            continue;
-                        } else if err.kind() == io::ErrorKind::Other {
-                            error!("Unknown error")
-                        }
-                        error!(
-                                "An unexpected error occurred during communication with the client... \n{}",
-                                err
-                            );
-                        return Err(io::Error::new(io::ErrorKind::Other, err));
-                    }
+                    Err(err) => return Err(err),
                 },
                 Err(err) => {
                     error!("A strange customer tried to connect... \n{}", err)

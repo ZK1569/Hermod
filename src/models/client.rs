@@ -3,6 +3,8 @@ use std::{
     net::{Ipv4Addr, TcpStream},
 };
 
+use log::{info, warn};
+
 use super::network::Network;
 
 pub struct Client {
@@ -17,9 +19,17 @@ impl Client {
     }
 
     pub fn run_client(&self) -> Result<(), io::Error> {
-        let stream = self.connect_to_server()?;
+        let stream = match self.connect_to_server() {
+            Ok(s) => s,
+            Err(err) => return Err(io::Error::new(io::ErrorKind::ConnectionRefused, err)),
+        };
 
-        let _ = Network::communication(stream);
+        info!("Connected to server");
+
+        match Network::communication(stream) {
+            Ok(_) => warn!("The server is disconnected"),
+            Err(err) => return Err(err),
+        }
 
         Ok(())
     }

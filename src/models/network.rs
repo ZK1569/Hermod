@@ -5,7 +5,7 @@ use std::{
 };
 
 use local_ip_address::local_ip;
-use log::{debug, error, trace};
+use log::{debug, error, trace, warn};
 
 use crate::types::communication::{Communication, CommunicationText};
 
@@ -49,7 +49,13 @@ impl Network {
                             debug!("Un cert recu")
                         }
                     },
-                    Err(err) => return Err(err),
+                    Err(err) => {
+                        if err.kind() == io::ErrorKind::InvalidData {
+                            warn!("Message lost");
+                            continue;
+                        }
+                        return Err(err);
+                    }
                 }
             }
         });
@@ -64,6 +70,9 @@ impl Network {
             io::stdin()
                 .read_line(&mut guess)
                 .expect("failed to readline");
+
+            guess.pop(); // INFO: Delete the '\n' at the end
+
             let mut data_tmp = guess.as_bytes();
 
             Network::send_message(&mut stream_clone, &enum_network, &mut data_tmp).unwrap();
@@ -88,6 +97,8 @@ impl Network {
                 ));
             }
         };
+
+        // INFO: The input thread is not checked
 
         Ok(())
     }

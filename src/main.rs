@@ -53,7 +53,13 @@ fn main() {
 
             match client.run_client() {
                 Ok(_) => info!("No errors encountered"),
-                Err(e) => error!("An error has occurred... \n{}", e),
+                Err(err) => {
+                    if err.kind() == io::ErrorKind::ConnectionRefused {
+                        error!("Server connection failure... \n{err}");
+                        process::exit(1);
+                    }
+                    error!("An error has occurred... \n{}", err)
+                }
             }
         }
     }
