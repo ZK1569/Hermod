@@ -3,7 +3,7 @@ use std::{
     net::{Ipv4Addr, TcpListener},
 };
 
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 
 use super::network::Network;
 
@@ -12,10 +12,21 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(address: Ipv4Addr, port: &str) -> Server {
-        Server {
-            network: Network::new(address, port),
-        }
+    pub fn new(port: &str, localhost: bool) -> Result<Server, io::Error> {
+        let ip = if localhost {
+            Ipv4Addr::new(127, 0, 0, 1)
+        } else {
+            match Network::get_local_ip() {
+                Ok(ip) => ip,
+                Err(err) => {
+                    debug!("{}", err);
+                    return Err(io::Error::new(io::ErrorKind::AddrNotAvailable, "The ip address is not accessible, please check that you are on a network..." ));
+                }
+            }
+        };
+        Ok(Server {
+            network: Network::new(ip, port),
+        })
     }
 
     pub fn start_server(&self) -> Result<TcpListener, io::Error> {

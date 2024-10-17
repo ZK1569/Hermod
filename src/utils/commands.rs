@@ -19,6 +19,7 @@ pub enum ExecMod {
 
 pub struct ServerMod {
     pub port: u16,
+    pub localhost: bool,
 }
 
 pub struct ClientMod {
@@ -30,7 +31,11 @@ impl fmt::Display for ExecMod {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ExecMod::Server(s) => {
-                write!(f, "Server mode - port: {}", s.port)
+                write!(
+                    f,
+                    "Server mode - port: {}, localhost: {}",
+                    s.port, s.localhost
+                )
             }
             ExecMod::Client(c) => {
                 write!(f, "Client mode - target: {}, port: {}", c.address, c.port)
@@ -41,7 +46,7 @@ impl fmt::Display for ExecMod {
 
 impl fmt::Display for CommandArg {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} debug: {}", self.execution_mod, self.debug)
+        write!(f, "{}, debug: {}", self.execution_mod, self.debug)
     }
 }
 
@@ -67,6 +72,13 @@ pub fn get_commands() -> Result<CommandArg, io::Error> {
                         .help("The port on which the server is running")
                         .default_value("8080")
                         .value_parser(port_in_range),
+                )
+                .arg(
+                    Arg::new("localhost")
+                        .short('l')
+                        .long("localhost")
+                        .help("Execute the server as localhost for debugging purposes")
+                        .action(ArgAction::SetTrue),
                 ),
         )
         .subcommand(
@@ -99,7 +111,9 @@ pub fn get_commands() -> Result<CommandArg, io::Error> {
                 None => 8080,
             };
 
-            ExecMod::Server(ServerMod { port })
+            let localhost = sub_matches.get_flag("localhost");
+
+            ExecMod::Server(ServerMod { port, localhost })
         }
         Some(("client", sub_matches)) => {
             let address = match sub_matches.get_one::<Ipv4Addr>("address") {

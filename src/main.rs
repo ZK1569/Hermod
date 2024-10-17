@@ -2,7 +2,7 @@ use std::{io, process};
 
 use env_logger::Env;
 use log::{debug, error, info};
-use models::{client::Client, network::Network, server::Server};
+use models::{client::Client, server::Server};
 use utils::{commands, starter};
 
 mod models;
@@ -32,14 +32,13 @@ fn main() {
 
     match command.execution_mod {
         commands::ExecMod::Server(server_info) => {
-            let ip = match Network::get_local_ip() {
-                Ok(ip) => ip,
+            let server = match Server::new(&server_info.port.to_string(), server_info.localhost) {
+                Ok(s) => s,
                 Err(err) => {
-                    error!("The ip address is not accessible, please check that you are on a network... {}", err);
+                    error!("{}", err);
                     process::exit(1);
                 }
             };
-            let server = Server::new(ip, &server_info.port.to_string());
 
             match server.run_sever() {
                 Ok(_) => info!("No errors encountered"),
