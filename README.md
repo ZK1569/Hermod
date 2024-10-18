@@ -2,13 +2,13 @@
 
 The aim of this project is to provide encrypted messaging between 2 machines
 
-## Scénario d'une exécution optimale
+## Optimum execution scenario
 
-1. Server starts.
+1. Server starts
 
 2. Communication parameters are loaded.
 
-   - defining the port to use
+   - Defining the port to use
 
 3. Loop until interrupted
 
@@ -26,23 +26,25 @@ The aim of this project is to provide encrypted messaging between 2 machines
       TODO:
 
    3. Server and client exchange certificats
+      TODO:
 
-4. Cryptography
-   TODO:
+## Cryptography
 
-5. The exchange protocol
+TODO:
 
-   Messages are exchanged over a TCP stream in the form of a sequence of bytes,
-   the result of serializing a hybrid structure combining a JSON description and binary data.
+## The exchange protocol
 
-   Indeed, to optimize the transfer of file or text information
-   (which can be voluminous and for which you don't want to commit rounding)
+Messages are exchanged over a TCP stream in the form of a sequence of bytes,
+the result of serializing a hybrid structure combining a JSON description and binary data.
 
-   All messages are of the form:
+Indeed, to optimize the transfer of file or text information
+(which can be voluminous and for which you don't want to commit rounding)
 
-   | Total message size         | JSON message size          | JSON message     | Data...       |
-   | -------------------------- | -------------------------- | ---------------- | ------------- |
-   | (u32 encodé en Big Endian) | (u32 encodé en Big Endian) | (encodé en utf8) | (binary data) |
+All messages are of the form:
 
-   The _Data_ section is therefore made up of (Total message size) - (JSON message size) bytes and contains all the data corresponding to the file or text.
-   data corresponding to the file or text
+| Total message size         | JSON message size          | JSON message     | Data...       |
+| -------------------------- | -------------------------- | ---------------- | ------------- |
+| (u32 encodé en Big Endian) | (u32 encodé en Big Endian) | (encodé en utf8) | (binary data) |
+
+The _Data_ section is therefore made up of (Total message size) - (JSON message size) bytes and contains all the data corresponding to the file or text.
+data corresponding to the file or text
