@@ -49,18 +49,16 @@ impl Server {
             self.network.address, self.network.port
         );
 
-        // TODO: Change to have only one client connected
-        for stream in listener.incoming() {
-            info!("A new customer is connected ...");
-
-            match stream {
-                Ok(s) => match Network::communication(s) {
+        match listener.accept() {
+            Ok((socket, addr)) => {
+                info!("A new customer ({}) is connected ...", addr);
+                match Network::communication(socket) {
                     Ok(_) => warn!("The customer has left the conversation"),
                     Err(err) => return Err(err),
-                },
-                Err(err) => {
-                    error!("A strange customer tried to connect... \n{}", err)
-                }
+                };
+            }
+            Err(e) => {
+                error!("{}", e);
             }
         }
 
