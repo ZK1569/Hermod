@@ -2,7 +2,7 @@
 
 The aim of this project is to provide encrypted messaging between 2 machines
 
-## Optimum execution scenario
+## Optimal execution scenario
 
 1. Server starts
 
