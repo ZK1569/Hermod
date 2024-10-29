@@ -3,6 +3,11 @@ use std::{io, process};
 use env_logger::Env;
 use log::{debug, error, info};
 use models::{client::Client, server::Server};
+use openssl::{
+    encrypt::Encrypter,
+    pkey::PKey,
+    rsa::{Padding, Rsa},
+};
 use utils::{commands, starter};
 
 mod models;
@@ -26,6 +31,27 @@ fn main() {
         "info"
     }))
     .init();
+
+    //-----------------------------------
+
+    let keypair = Rsa::generate(2048).unwrap();
+    let keypair = PKey::from_rsa(keypair).unwrap();
+
+    let data = b"hello, world!";
+
+    // Encrypt the data with RSA PKCS1
+    let mut encrypter = Encrypter::new(&keypair).unwrap();
+    encrypter.set_rsa_padding(Padding::PKCS1).unwrap();
+    // Create an output buffer
+    let buffer_len = encrypter.encrypt_len(data).unwrap();
+    let mut encrypted = vec![0; buffer_len];
+    // Encrypt and truncate the buffer
+    let encrypted_len = encrypter.encrypt(data, &mut encrypted).unwrap();
+    encrypted.truncate(encrypted_len);
+    debug!("{:?}", keypair);
+    debug!("{:?}", encrypted);
+
+    //-----------------------------------
 
     starter::start_message();
     debug!("Inputed commands : {}", command);

@@ -7,7 +7,9 @@ use std::{
 use local_ip_address::local_ip;
 use log::{debug, error, trace, warn};
 
-use crate::types::communication::{Communication, CommunicationText};
+use crate::types::communication::{
+    Communication, CommunicationPassword, CommunicationText, PasswordState,
+};
 
 #[derive(Debug)]
 pub struct Network {
@@ -47,6 +49,9 @@ impl Network {
                         Communication::CommunicationCertificate(_comm_cert) => {
                             // TODO: Check cert
                             debug!("Un cert recu")
+                        }
+                        Communication::CommunicationPassword(_comm_password) => {
+                            debug!("un mdp recu")
                         }
                     },
                     Err(err) => {
@@ -103,7 +108,7 @@ impl Network {
         Ok(())
     }
 
-    fn send_message(
+    pub fn send_message(
         stream: &mut TcpStream,
         communication: &Communication,
         data: &[u8],
@@ -122,7 +127,7 @@ impl Network {
         Ok(json_message)
     }
 
-    fn read_message(stream: &mut TcpStream) -> Result<(Communication, Vec<u8>), io::Error> {
+    pub fn read_message(stream: &mut TcpStream) -> Result<(Communication, Vec<u8>), io::Error> {
         let mut total_len_buf = [0; 4];
         match stream.read_exact(&mut total_len_buf) {
             Ok(_) => trace!("Received total message size"),
@@ -211,5 +216,28 @@ impl Network {
         };
 
         Ok(ipv4)
+    }
+
+    pub fn send_password(stream: &mut TcpStream, hash: &[u8; 32]) -> Result<(), io::Error> {
+        let password_communication = CommunicationPassword {
+            password_state: PasswordState::Submition,
+        };
+        let enum_network = Communication::CommunicationPassword(password_communication);
+
+        let _ = Network::send_message(stream, &enum_network, hash)?;
+        Ok(())
+    }
+
+    pub fn password_response(
+        stream: &mut TcpStream,
+        validity: PasswordState,
+    ) -> Result<(), io::Error> {
+        let password_communication = CommunicationPassword {
+            password_state: validity,
+        };
+        let enum_network = Communication::CommunicationPassword(password_communication);
+        let data: [u8; 0] = [0; 0];
+        let _ = Network::send_message(stream, &enum_network, &data)?;
+        Ok(())
     }
 }
