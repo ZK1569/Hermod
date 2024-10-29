@@ -35,10 +35,7 @@ impl Client {
                 if err.kind() == io::ErrorKind::ConnectionRefused {
                     return Err(err);
                 }
-                return Err(io::Error::new(
-                    io::ErrorKind::PermissionDenied,
-                    "Invalid password",
-                ));
+                return Err(io::Error::new(io::ErrorKind::PermissionDenied, err));
             }
         };
 

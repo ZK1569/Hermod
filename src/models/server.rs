@@ -132,11 +132,11 @@ impl Server {
                 },
                 Err(err) => {
                     error!("Error password... {}", err);
+                    Network::password_response(stream, PasswordState::Failed)?;
                     return Err(err);
                 }
             }
         }
-        info!("passe par la pour aller a la fin apres");
         Network::password_response(stream, PasswordState::Failed)?;
         Err(io::Error::new(
             io::ErrorKind::PermissionDenied,

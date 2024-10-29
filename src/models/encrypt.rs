@@ -10,7 +10,7 @@ impl Enrypt {
         hasher.update(word.as_bytes())?;
         let mut hashed: [u8; 32] = [0; 32];
 
-        let _ = &hasher.finish_xof(&mut hashed)?;
+        let _ = hasher.finish_xof(&mut hashed)?;
 
         Ok(hashed)
     }

@@ -86,6 +86,11 @@ fn main() {
                     if err.kind() == io::ErrorKind::ConnectionRefused {
                         error!("Server connection failure... \n{err}");
                         process::exit(1);
+                    } else if err.kind() == io::ErrorKind::PermissionDenied {
+                        error!(
+                            "It is not possible to connect to the server because... {}",
+                            err
+                        );
                     }
                     error!("An error has occurred... \n{}", err)
                 }
