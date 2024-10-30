@@ -39,7 +39,9 @@ impl Client {
             }
         };
 
-        match Network::communication(stream) {
+        let key = Enrypt::derive_key_from_password(&password, 10000);
+
+        match Network::communication(stream, key) {
             Ok(_) => warn!("The server is disconnected"),
             Err(err) => return Err(err),
         }

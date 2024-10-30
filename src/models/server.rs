@@ -41,6 +41,20 @@ impl Server {
     }
 
     pub fn run_sever(&self) -> Result<(), io::Error> {
+        let (hash, password) = match Server::choose_password() {
+            Ok((h, p)) => (h, p),
+            Err(_) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "It was not possible to calculate the password hash",
+                ))
+            }
+        };
+
+        let key = Enrypt::derive_key_from_password(&password, 10000);
+
+        debug!("Key: {:?}", key);
+
         let listener = match self.start_server() {
             Ok(r) => r,
             Err(err) => {
@@ -54,22 +68,12 @@ impl Server {
             self.network.address, self.network.port
         );
 
-        let hash = match Server::choose_password() {
-            Ok(h) => h,
-            Err(_) => {
-                return Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    "It was not possible to calculate the password hash",
-                ))
-            }
-        };
-
         match listener.accept() {
             Ok((mut socket, addr)) => {
                 info!("A new customer ({}) is connected ...", addr);
                 match Server::check_password(&mut socket, hash) {
                     Ok(_) => {
-                        match Network::communication(socket) {
+                        match Network::communication(socket, key) {
                             Ok(_) => warn!("The client has left the conversation"),
                             Err(err) => return Err(err),
                         };
@@ -87,7 +91,7 @@ impl Server {
         Ok(())
     }
 
-    fn choose_password() -> Result<[u8; 32], io::Error> {
+    fn choose_password() -> Result<([u8; 32], String), io::Error> {
         println!("Choose a password that will ensure the security of the conversation: ");
 
         let mut password = String::new();
@@ -101,7 +105,7 @@ impl Server {
 
         let hash = Enrypt::hash(&password)?;
 
-        Ok(hash)
+        Ok((hash, password))
     }
 
     fn check_password(stream: &mut TcpStream, hash: [u8; 32]) -> Result<(), io::Error> {

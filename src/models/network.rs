@@ -11,6 +11,8 @@ use crate::types::communication::{
     Communication, CommunicationPassword, CommunicationText, PasswordState,
 };
 
+use super::encrypt::Enrypt;
+
 #[derive(Debug)]
 pub struct Network {
     pub address: Ipv4Addr,
@@ -29,7 +31,7 @@ impl Network {
         format!("{}:{}", self.address, self.port)
     }
 
-    pub fn communication(mut stream: TcpStream) -> Result<(), io::Error> {
+    pub fn communication(mut stream: TcpStream, key: [u8; 32]) -> Result<(), io::Error> {
         // FIX: Peut avoir une meilleur solution que try_clone()
         let mut stream_clone = stream.try_clone()?;
 
@@ -39,8 +41,9 @@ impl Network {
                     Ok((communication, data)) => match communication {
                         Communication::CommunicationText(_comm_text) => {
                             // TODO: Show message
-                            let message = String::from_utf8_lossy(&data);
-                            println!("other: {}", message)
+                            let message = Enrypt::decrypt_message(&data, &key);
+                            // let message = String::from_utf8_lossy(&message);
+                            // println!("other: {}", message)
                         }
                         Communication::CommunicationFile(_comm_file) => {
                             // TODO: Download file
@@ -70,15 +73,15 @@ impl Network {
 
             let enum_network = Communication::CommunicationText(init_message);
 
-            let mut guess = String::new();
+            let mut message = String::new();
 
             io::stdin()
-                .read_line(&mut guess)
+                .read_line(&mut message)
                 .expect("failed to readline");
 
-            guess.pop(); // INFO: Delete the '\n' at the end
+            message.pop(); // INFO: Delete the '\n' at the end
 
-            let mut data_tmp = guess.as_bytes();
+            let mut data_tmp = Enrypt::encrypt_message(key, &message.as_bytes());
 
             Network::send_message(&mut stream_clone, &enum_network, &mut data_tmp).unwrap();
         });
