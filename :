@@ -59,22 +59,16 @@ All messages are of the form:
 | -------------------------- | -------------------------- | ---------------- | ------------- |
 | (u32 encodé en Big Endian) | (u32 encodé en Big Endian) | (encodé en utf8) | (binary data) |
 
-The _Data_ section is therefore made up of (Total message size) - (JSON message size) bytes and contains all the data corresponding to the file or text.
-data corresponding to the file or text
-
 ### Description des messages
 
 All these messages are transmitted in the form of a [JSON](https://fr.wikipedia.org/wiki/JavaScript_Object_Notation) serialization
 
-| Name of message            | Message fields                  | Exemple                                                |
-| -------------------------- | ------------------------------- | ------------------------------------------------------ |
-| `CommunicationText`        | ``                              | `{"CommunicationText: {}}`                             |
-| `CommunicationCertificate` | TODO:                           | TODO:                                                  |
-| `CommunicationFile`        | TODO:                           | TODO:                                                  |
-| `CommunicationPassword`    | `password_state: PasswordState` | `{"CommunicationPasword":{"password_state":"Correct"}` |
+| Name of message            | Message fields                                                                       | Exemple                                                                                                                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CommunicationText`        | ``                                                                                   | ``                                                                                                                                                                              |
+| `CommunicationCertificate` | TODO:                                                                                | TODO:                                                                                                                                                                           |
+| `CommunicationFile`        | TODO:                                                                                | `{"FragmentResult":{"id":{"offset":0,"count":8},"resolution":{"x":160,"y":120},"range":{"min":{"x":0.0,"y":0.0},"max":{"x":1.0,"y":1.0}},"pixels":{"offset":8,"count":19200}}}` |
+| `CommunicationPassword`    | `id: U8Data`<br/>`resolution: Resolution`<br/>`range: Range`<br/>`pixels: PixelData` | `{"FragmentResult":{"id":{"offset":0,"count":8},"resolution":{"x":160,"y":120},"range":{"min":{"x":0.0,"y":0.0},"max":{"x":1.0,"y":1.0}},"pixels":{"offset":8,"count":19200}}}` |
 
-### Complementary types
-
-| Type name       | Description of type                                                |
-| --------------- | ------------------------------------------------------------------ |
-| `PasswordState` | `Submition` OR<br/>`Correct` OR <br/> `Incorrect` OR <br/>`Failed` |
+The _Data_ section is therefore made up of (Total message size) - (JSON message size) bytes and contains all the data corresponding to the file or text.
+data corresponding to the file or text

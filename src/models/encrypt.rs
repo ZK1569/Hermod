@@ -10,6 +10,7 @@ pub struct Encrypt;
 
 impl Encrypt {
     pub fn hash(word: &str) -> Result<[u8; 32], io::Error> {
+        // FIX: Change sha256 to sha512
         let mut hasher = Hasher::new(MessageDigest::sha256())?;
         hasher.update(word.as_bytes())?;
         let hashed = hasher.finish()?;
