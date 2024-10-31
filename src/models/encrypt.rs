@@ -13,11 +13,18 @@ impl Enrypt {
     pub fn hash(word: &str) -> Result<[u8; 32], io::Error> {
         let mut hasher = Hasher::new(MessageDigest::sha256())?;
         hasher.update(word.as_bytes())?;
-        let mut hashed: [u8; 32] = [0; 32];
+        let hashed = hasher.finish()?;
 
-        let _ = hasher.finish_xof(&mut hashed)?;
-
-        Ok(hashed)
+        let mut result = [0u8; 32];
+        if hashed.len() == 32 {
+            result.copy_from_slice(&hashed);
+            Ok(result)
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::Other,
+                "Unexpected hash length",
+            ))
+        }
     }
 
     pub fn derive_key_from_password(password: &str, iterations: usize) -> [u8; 32] {
