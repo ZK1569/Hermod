@@ -7,7 +7,11 @@ use std::{
 use local_ip_address::local_ip;
 use log::{debug, error, trace, warn};
 
-use crate::types::communication::{Communication, CommunicationText};
+use crate::types::communication::{
+    Communication, CommunicationPassword, CommunicationText, PasswordState,
+};
+
+use super::encrypt::Encrypt;
 
 #[derive(Debug)]
 pub struct Network {
@@ -27,7 +31,7 @@ impl Network {
         format!("{}:{}", self.address, self.port)
     }
 
-    pub fn communication(mut stream: TcpStream) -> Result<(), io::Error> {
+    pub fn communication(mut stream: TcpStream, key: [u8; 32]) -> Result<(), io::Error> {
         // FIX: Peut avoir une meilleur solution que try_clone()
         let mut stream_clone = stream.try_clone()?;
 
@@ -36,8 +40,8 @@ impl Network {
                 match Network::read_message(&mut stream) {
                     Ok((communication, data)) => match communication {
                         Communication::CommunicationText(_comm_text) => {
-                            // TODO: Show message
-                            let message = String::from_utf8_lossy(&data);
+                            let message = Encrypt::decrypt_message(&data, &key);
+                            let message = String::from_utf8_lossy(&message).to_string();
                             println!("other: {}", message)
                         }
                         Communication::CommunicationFile(_comm_file) => {
@@ -47,6 +51,9 @@ impl Network {
                         Communication::CommunicationCertificate(_comm_cert) => {
                             // TODO: Check cert
                             debug!("Un cert recu")
+                        }
+                        Communication::CommunicationPassword(_comm_password) => {
+                            debug!("un mdp recu")
                         }
                     },
                     Err(err) => {
@@ -65,15 +72,15 @@ impl Network {
 
             let enum_network = Communication::CommunicationText(init_message);
 
-            let mut guess = String::new();
+            let mut message = String::new();
 
             io::stdin()
-                .read_line(&mut guess)
+                .read_line(&mut message)
                 .expect("failed to readline");
 
-            guess.pop(); // INFO: Delete the '\n' at the end
+            message.pop(); // INFO: Delete the '\n' at the end
 
-            let mut data_tmp = guess.as_bytes();
+            let mut data_tmp = Encrypt::encrypt_message(&message.as_bytes(), &key);
 
             Network::send_message(&mut stream_clone, &enum_network, &mut data_tmp).unwrap();
         });
@@ -103,7 +110,7 @@ impl Network {
         Ok(())
     }
 
-    fn send_message(
+    pub fn send_message(
         stream: &mut TcpStream,
         communication: &Communication,
         data: &[u8],
@@ -122,7 +129,7 @@ impl Network {
         Ok(json_message)
     }
 
-    fn read_message(stream: &mut TcpStream) -> Result<(Communication, Vec<u8>), io::Error> {
+    pub fn read_message(stream: &mut TcpStream) -> Result<(Communication, Vec<u8>), io::Error> {
         let mut total_len_buf = [0; 4];
         match stream.read_exact(&mut total_len_buf) {
             Ok(_) => trace!("Received total message size"),
@@ -211,5 +218,28 @@ impl Network {
         };
 
         Ok(ipv4)
+    }
+
+    pub fn send_password(stream: &mut TcpStream, hash: &[u8; 32]) -> Result<(), io::Error> {
+        let password_communication = CommunicationPassword {
+            password_state: PasswordState::Submition,
+        };
+        let enum_network = Communication::CommunicationPassword(password_communication);
+
+        let _ = Network::send_message(stream, &enum_network, hash)?;
+        Ok(())
+    }
+
+    pub fn password_response(
+        stream: &mut TcpStream,
+        validity: PasswordState,
+    ) -> Result<(), io::Error> {
+        let password_communication = CommunicationPassword {
+            password_state: validity,
+        };
+        let enum_network = Communication::CommunicationPassword(password_communication);
+        let data: [u8; 0] = [0; 0];
+        let _ = Network::send_message(stream, &enum_network, &data)?;
+        Ok(())
     }
 }

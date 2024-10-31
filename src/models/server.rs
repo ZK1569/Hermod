@@ -1,11 +1,18 @@
 use std::{
     io,
-    net::{Ipv4Addr, TcpListener},
+    net::{Ipv4Addr, TcpListener, TcpStream},
 };
 
 use log::{debug, error, info, warn};
 
+use crate::{
+    models::encrypt::Encrypt,
+    types::communication::{Communication, PasswordState},
+};
+
 use super::network::Network;
+
+const MAX_PASSWORD_ERRORS: u8 = 3;
 
 pub struct Server {
     pub network: Network,
@@ -34,9 +41,21 @@ impl Server {
     }
 
     pub fn run_sever(&self) -> Result<(), io::Error> {
-        let listener_result = self.start_server();
+        let (hash, password) = match Server::choose_password() {
+            Ok((h, p)) => (h, p),
+            Err(_) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "It was not possible to calculate the password hash",
+                ))
+            }
+        };
 
-        let listener = match listener_result {
+        let key = Encrypt::derive_key_from_password(&password, 10000);
+
+        debug!("Key: {:?}", key);
+
+        let listener = match self.start_server() {
             Ok(r) => r,
             Err(err) => {
                 error!("Server failed to start... \n{err}");
@@ -50,12 +69,19 @@ impl Server {
         );
 
         match listener.accept() {
-            Ok((socket, addr)) => {
+            Ok((mut socket, addr)) => {
                 info!("A new customer ({}) is connected ...", addr);
-                match Network::communication(socket) {
-                    Ok(_) => warn!("The customer has left the conversation"),
-                    Err(err) => return Err(err),
-                };
+                match Server::check_password(&mut socket, hash) {
+                    Ok(_) => {
+                        match Network::communication(socket, key) {
+                            Ok(_) => warn!("The client has left the conversation"),
+                            Err(err) => return Err(err),
+                        };
+                    }
+                    Err(err) => {
+                        return Err(err);
+                    }
+                }
             }
             Err(e) => {
                 error!("{}", e);
@@ -63,5 +89,62 @@ impl Server {
         }
 
         Ok(())
+    }
+
+    fn choose_password() -> Result<([u8; 32], String), io::Error> {
+        println!("Choose a password that will ensure the security of the conversation: ");
+
+        let mut password = String::new();
+        io::stdin()
+            .read_line(&mut password)
+            .expect("Failed to read password");
+
+        password.pop(); // INFO: Delete the '\n' at the end
+
+        debug!("the password is >{}<", password);
+
+        let hash = Encrypt::hash(&password)?;
+
+        Ok((hash, password))
+    }
+
+    fn check_password(stream: &mut TcpStream, hash: [u8; 32]) -> Result<(), io::Error> {
+        let mut errors = 0;
+        while errors <= MAX_PASSWORD_ERRORS - 1 {
+            match Network::read_message(stream) {
+                Ok((communication, data)) => match communication {
+                    Communication::CommunicationPassword(_comm_password) => {
+                        debug!("Password recu {:?}", data);
+                        if data == hash {
+                            info!("Correct password received");
+                            Network::password_response(stream, PasswordState::Correct)?;
+                            return Ok(());
+                        }
+                        if errors < MAX_PASSWORD_ERRORS - 1 {
+                            info!("Incorrect password received");
+                            Network::password_response(stream, PasswordState::Incorrect)?;
+                        }
+                        errors = errors + 1;
+                    }
+                    _ => {
+                        Network::password_response(stream, PasswordState::Failed)?;
+                        return Err(io::Error::new(
+                            io::ErrorKind::InvalidData,
+                            "Did not receive password",
+                        ));
+                    }
+                },
+                Err(err) => {
+                    error!("Error password... {}", err);
+                    Network::password_response(stream, PasswordState::Failed)?;
+                    return Err(err);
+                }
+            }
+        }
+        Network::password_response(stream, PasswordState::Failed)?;
+        Err(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            "Invalid password",
+        ))
     }
 }
