@@ -7,7 +7,7 @@ use log::{debug, error, info, warn};
 
 use crate::types::communication::{Communication, CommunicationPassword, PasswordState};
 
-use super::{encrypt::Enrypt, network::Network};
+use super::{encrypt::Encrypt, network::Network};
 
 pub struct Client {
     pub network: Network,
@@ -39,7 +39,7 @@ impl Client {
             }
         };
 
-        let key = Enrypt::derive_key_from_password(&password, 10000);
+        let key = Encrypt::derive_key_from_password(&password, 10000);
 
         match Network::communication(stream, key) {
             Ok(_) => warn!("The server is disconnected"),
@@ -64,7 +64,7 @@ impl Client {
 
             password.pop();
 
-            let hash = Enrypt::hash(&password)?;
+            let hash = Encrypt::hash(&password)?;
 
             Network::send_password(stream, &hash).expect("Failled to send password");
 

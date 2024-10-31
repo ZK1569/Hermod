@@ -6,7 +6,7 @@ use std::{
 use log::{debug, error, info, warn};
 
 use crate::{
-    models::encrypt::Enrypt,
+    models::encrypt::Encrypt,
     types::communication::{Communication, PasswordState},
 };
 
@@ -51,7 +51,7 @@ impl Server {
             }
         };
 
-        let key = Enrypt::derive_key_from_password(&password, 10000);
+        let key = Encrypt::derive_key_from_password(&password, 10000);
 
         debug!("Key: {:?}", key);
 
@@ -103,7 +103,7 @@ impl Server {
 
         debug!("the password is >{}<", password);
 
-        let hash = Enrypt::hash(&password)?;
+        let hash = Encrypt::hash(&password)?;
 
         Ok((hash, password))
     }

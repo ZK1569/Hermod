@@ -6,9 +6,9 @@ use openssl::{
     symm::{Cipher, Crypter, Mode},
 };
 
-pub struct Enrypt;
+pub struct Encrypt;
 
-impl Enrypt {
+impl Encrypt {
     pub fn hash(word: &str) -> Result<[u8; 32], io::Error> {
         let mut hasher = Hasher::new(MessageDigest::sha256())?;
         hasher.update(word.as_bytes())?;

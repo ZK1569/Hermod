@@ -11,7 +11,7 @@ use crate::types::communication::{
     Communication, CommunicationPassword, CommunicationText, PasswordState,
 };
 
-use super::encrypt::Enrypt;
+use super::encrypt::Encrypt;
 
 #[derive(Debug)]
 pub struct Network {
@@ -40,7 +40,7 @@ impl Network {
                 match Network::read_message(&mut stream) {
                     Ok((communication, data)) => match communication {
                         Communication::CommunicationText(_comm_text) => {
-                            let message = Enrypt::decrypt_message(&data, &key);
+                            let message = Encrypt::decrypt_message(&data, &key);
                             let message = String::from_utf8_lossy(&message).to_string();
                             println!("other: {}", message)
                         }
@@ -80,7 +80,7 @@ impl Network {
 
             message.pop(); // INFO: Delete the '\n' at the end
 
-            let mut data_tmp = Enrypt::encrypt_message(&message.as_bytes(), &key);
+            let mut data_tmp = Encrypt::encrypt_message(&message.as_bytes(), &key);
 
             Network::send_message(&mut stream_clone, &enum_network, &mut data_tmp).unwrap();
         });
