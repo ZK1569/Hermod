@@ -114,7 +114,7 @@ impl Server {
             match Network::read_message(stream) {
                 Ok((communication, data)) => match communication {
                     Communication::CommunicationPassword(_comm_password) => {
-                        debug!("Password recu {:?}", data);
+                        debug!("Password received {:?}", data);
                         if data == hash {
                             info!("Correct password received");
                             Network::password_response(stream, PasswordState::Correct)?;

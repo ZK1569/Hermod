@@ -46,14 +46,14 @@ impl Network {
                         }
                         Communication::CommunicationFile(_comm_file) => {
                             // TODO: Download file
-                            debug!("Un fichier recu")
+                            debug!("File received")
                         }
                         Communication::CommunicationCertificate(_comm_cert) => {
                             // TODO: Check cert
-                            debug!("Un cert recu")
+                            debug!("Cert received")
                         }
                         Communication::CommunicationPassword(_comm_password) => {
-                            debug!("un mdp recu")
+                            debug!("Password received")
                         }
                     },
                     Err(err) => {
