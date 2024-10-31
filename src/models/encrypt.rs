@@ -1,6 +1,5 @@
 use std::io;
 
-use log::debug;
 use openssl::{
     hash::{Hasher, MessageDigest},
     pkcs5::pbkdf2_hmac,
@@ -40,10 +39,9 @@ impl Enrypt {
         key
     }
 
-    pub fn encrypt_message(key: [u8; 32], message: &[u8]) -> Vec<u8> {
-        // FIX: Ne pas crée un nouveau cipher a chaque fois
+    pub fn encrypt_message(message: &[u8], key: &[u8; 32]) -> Vec<u8> {
         let cipher = Cipher::aes_256_cbc();
-        let mut encrypter = Crypter::new(cipher, Mode::Encrypt, &key, None)
+        let mut encrypter = Crypter::new(cipher, Mode::Encrypt, key, None)
             .expect("Erreur d'initialisation du chiffreur");
 
         let mut ciphertext = vec![0; message.len() + cipher.block_size()];
@@ -58,7 +56,7 @@ impl Enrypt {
         ciphertext
     }
 
-    pub fn decrypt_message(ciphertext: &[u8], key: &[u8]) -> () {
+    pub fn decrypt_message(ciphertext: &[u8], key: &[u8; 32]) -> Vec<u8> {
         let cipher = Cipher::aes_256_cbc();
         let mut decrypter = Crypter::new(cipher, Mode::Decrypt, key, None)
             .expect("Erreur d'initialisation du déchiffreur");
@@ -72,7 +70,6 @@ impl Enrypt {
             .expect("Erreur lors de la finalisation");
 
         plaintext.truncate(count);
-        let jcp = String::from_utf8_lossy(&plaintext);
-        debug!("message recu ---> {}", jcp);
+        plaintext
     }
 }
