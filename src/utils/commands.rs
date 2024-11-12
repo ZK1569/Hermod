@@ -5,7 +5,7 @@ use std::{
     ops::RangeInclusive,
 };
 
-use clap::{command, Arg, ArgAction, Command};
+use clap::{command, Arg, ArgAction, Command, Subcommand};
 
 pub struct CommandArg {
     pub execution_mod: ExecMod,
@@ -15,6 +15,7 @@ pub struct CommandArg {
 pub enum ExecMod {
     Server(ServerMod),
     Client(ClientMod),
+    Certificate(Certificate),
 }
 
 pub struct ServerMod {
@@ -25,6 +26,23 @@ pub struct ServerMod {
 pub struct ClientMod {
     pub address: Ipv4Addr,
     pub port: u16,
+}
+
+#[derive(Debug)]
+pub struct Certificate {
+    pub action: CertificateActions,
+}
+
+#[derive(Debug)]
+pub enum CertificateActions {
+    New,
+    See(CertificateToSee),
+    Delete,
+}
+
+#[derive(Debug)]
+pub struct CertificateToSee {
+    pub name: String,
 }
 
 impl fmt::Display for ExecMod {
@@ -39,6 +57,9 @@ impl fmt::Display for ExecMod {
             }
             ExecMod::Client(c) => {
                 write!(f, "Client mode - target: {}, port: {}", c.address, c.port)
+            }
+            ExecMod::Certificate(_c) => {
+                write!(f, "Certificate")
             }
         }
     }
@@ -102,6 +123,19 @@ pub fn get_commands() -> Result<CommandArg, io::Error> {
                         .value_parser(port_in_range),
                 ),
         )
+        .subcommand(
+            Command::new("certificate")
+                .subcommand_required(true)
+                .arg_required_else_help(true)
+                .about("Command for certificates")
+                .subcommand(Command::new("new").about("Generate a new certificate"))
+                .subcommand(
+                    Command::new("see")
+                        .arg(Arg::new("name").required(true).index(1))
+                        .about("Displays certificate information"),
+                )
+                .subcommand(Command::new("delete").about("Deleting your local certificate")),
+        )
         .get_matches();
 
     let exec: ExecMod = match matches.subcommand() {
@@ -132,6 +166,29 @@ pub fn get_commands() -> Result<CommandArg, io::Error> {
 
             ExecMod::Client(ClientMod { address, port })
         }
+        Some(("certificate", sub_matches)) => match sub_matches.subcommand() {
+            Some(("new", _sub_matches)) => ExecMod::Certificate(Certificate {
+                action: CertificateActions::New,
+            }),
+            Some(("see", sub_matches)) => {
+                let file_name = match sub_matches.get_one::<String>("name") {
+                    Some(n) => n.clone(),
+                    None => {
+                        return Err(io::Error::new(
+                            io::ErrorKind::InvalidData,
+                            "Certificate not specified",
+                        ))
+                    }
+                };
+                ExecMod::Certificate(Certificate {
+                    action: CertificateActions::See(CertificateToSee { name: file_name }),
+                })
+            }
+            Some(("delete", _sub_matches)) => ExecMod::Certificate(Certificate {
+                action: CertificateActions::Delete,
+            }),
+            _ => unreachable!("an unknown command is used for certificates"),
+        },
         _ => unreachable!("an unknown command is used"),
     };
 

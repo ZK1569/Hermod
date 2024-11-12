@@ -3,11 +3,6 @@ use std::{io, process};
 use env_logger::Env;
 use log::{debug, error, info};
 use models::{client::Client, server::Server};
-use openssl::{
-    encrypt::Encrypter,
-    pkey::PKey,
-    rsa::{Padding, Rsa},
-};
 use utils::{commands, starter};
 
 mod models;
@@ -74,6 +69,9 @@ fn main() {
                     error!("An error has occurred... \n{}", err)
                 }
             }
+        }
+        commands::ExecMod::Certificate(d) => {
+            debug!("Wont to do something with certificates {:?}", d);
         }
     }
 }

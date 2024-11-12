@@ -3,9 +3,9 @@ use std::{
     net::{Ipv4Addr, TcpStream},
 };
 
-use log::{debug, error, info, warn};
+use log::{debug, info, warn};
 
-use crate::types::communication::{Communication, CommunicationPassword, PasswordState};
+use crate::types::communication::{Communication, PasswordState};
 
 use super::{encrypt::Encrypt, network::Network};
 
