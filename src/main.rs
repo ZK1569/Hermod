@@ -2,8 +2,11 @@ use std::{io, process};
 
 use env_logger::Env;
 use log::{debug, error, info};
-use models::{client::Client, server::Server};
-use utils::{commands, starter};
+use models::{client::Client, encrypt::Encrypt, server::Server};
+use utils::{
+    commands::{self, CertificateActions},
+    input, starter,
+};
 
 mod models;
 mod tests;
@@ -70,8 +73,60 @@ fn main() {
                 }
             }
         }
-        commands::ExecMod::Certificate(d) => {
-            debug!("Wont to do something with certificates {:?}", d);
-        }
+        commands::ExecMod::Certificate(cert_action) => match cert_action.action {
+            CertificateActions::New => {
+                let username = match input::input("Full name ") {
+                    Ok(u) => u,
+                    Err(err) => {
+                        error!("Error reading user input... {}", err);
+                        process::exit(1);
+                    }
+                };
+                //  country / localisasty
+                let email = match input::input("Email ") {
+                    Ok(u) => u,
+                    Err(err) => {
+                        error!("Error reading user input... {}", err);
+                        process::exit(1);
+                    }
+                };
+                let country = match input::input("Country [CA]") {
+                    Ok(mut u) => {
+                        if u.len() != 2 {
+                            error!("Country name not valid, default used [CA]");
+                            u = "CA".to_owned();
+                        }
+                        u
+                    }
+                    Err(err) => {
+                        error!("Error reading user input... {}", err);
+                        process::exit(1);
+                    }
+                };
+                let locality = match input::input("Locality Name ") {
+                    Ok(u) => u,
+                    Err(err) => {
+                        error!("Error reading user input... {}", err);
+                        process::exit(1);
+                    }
+                };
+                let (cert, key_pair) =
+                    match Encrypt::mk_ca_cert(&username, &email, &country, &locality) {
+                        Ok((c, k)) => (c, k),
+                        Err(err) => {
+                            error!(
+                                "Something went wrong with the certificate generation... {}",
+                                err
+                            );
+                            process::exit(1);
+                        }
+                    };
+
+                dbg!(cert);
+                dbg!(key_pair);
+            }
+            CertificateActions::Delete => {}
+            CertificateActions::See(_) => {}
+        },
     }
 }

@@ -92,6 +92,7 @@ impl Server {
     }
 
     fn choose_password() -> Result<([u8; 32], String), io::Error> {
+        // TODO: use Input.input() to get user password
         println!("Choose a password that will ensure the security of the conversation: ");
 
         let mut password = String::new();
