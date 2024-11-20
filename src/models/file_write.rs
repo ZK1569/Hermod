@@ -4,7 +4,7 @@ use std::fs::create_dir_all;
 use std::io::Write;
 use std::{fs, io};
 
-pub fn certificate(cert: X509) -> Result<(), io::Error> {
+pub fn save_certificate(cert: X509) -> Result<(), io::Error> {
     let _ = make_dir("/Users/zk/.config/hermod")?;
 
     let cert_bin = cert.to_pem()?;
@@ -20,7 +20,7 @@ pub fn certificate(cert: X509) -> Result<(), io::Error> {
     Ok(())
 }
 
-pub fn pvt_key(key: PKey<Private>) -> Result<(), io::Error> {
+pub fn save_pvt_key(key: PKey<Private>) -> Result<(), io::Error> {
     let _ = make_dir("/Users/zk/.config/hermod")?;
 
     let key_bin = key.private_key_to_pem_pkcs8()?;
