@@ -2,7 +2,7 @@ use std::{io, process};
 
 use env_logger::Env;
 use log::{debug, error, info};
-use models::{client::Client, encrypt::Encrypt, server::Server};
+use models::{client::Client, encrypt::Encrypt, file_whrite, server::Server};
 use utils::{
     commands::{self, CertificateActions},
     input, starter,
@@ -122,9 +122,14 @@ fn main() {
                         }
                     };
 
-                dbg!(cert);
-                dbg!(key_pair);
+                if let Err(e) = file_whrite::certificate(cert) {
+                    error!("Error will saving the user's certificate... {}", e);
+                }
+                if let Err(e) = file_whrite::pvt_key(key_pair) {
+                    error!("Error will saving the user's private key... {}", e);
+                }
             }
+
             CertificateActions::Delete => {}
             CertificateActions::See(_) => {}
         },
