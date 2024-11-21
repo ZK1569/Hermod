@@ -1,12 +1,13 @@
 use home::home_dir;
-use log::{debug, info, trace, warn};
+use log::{debug, trace, warn};
 use serde::{Deserialize, Serialize};
-use std::{fs, io};
+use std::{env::current_dir, fs, io, process};
 
 #[derive(Debug)]
 pub struct Config {
     pub user_home_path: String,
     pub config_path: String,
+    pub current_path: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -69,9 +70,18 @@ impl Config {
             }
         };
 
+        let current_path = match current_dir() {
+            Ok(c) => c.to_string_lossy().to_string(),
+            Err(e) => {
+                warn!("It was not possible to obtain the execution path... {e}");
+                process::exit(1)
+            }
+        };
+
         Config {
             user_home_path: config_path.clone(),
             config_path: config_path + "/.config/hermod",
+            current_path,
         }
     }
 }

@@ -142,7 +142,20 @@ fn main() {
                     warn!("There cas an error when trying to delete the private key file... {e}");
                 }
             }
-            CertificateActions::See(_) => {}
+
+            CertificateActions::See(certificate) => {
+                let file_path: String;
+                if certificate.file_path.starts_with(|c| c == '/') {
+                    file_path = certificate.file_path.clone();
+                } else {
+                    file_path = config.current_path.clone() + "/" + &certificate.file_path;
+                }
+                debug!("path for cert : {}", file_path);
+                match file_write::read_certificate(&file_path) {
+                    Ok(cert) => info!("{}: \n{:#?}", certificate.file_path, cert),
+                    Err(e) => error!("Unable to display the certificate... {e}"),
+                };
+            }
         },
     }
 }

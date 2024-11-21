@@ -5,7 +5,7 @@ use std::{
     ops::RangeInclusive,
 };
 
-use clap::{command, Arg, ArgAction, Command, Subcommand};
+use clap::{command, Arg, ArgAction, Command};
 
 pub struct CommandArg {
     pub execution_mod: ExecMod,
@@ -42,7 +42,7 @@ pub enum CertificateActions {
 
 #[derive(Debug)]
 pub struct CertificateToSee {
-    pub name: String,
+    pub file_path: String,
 }
 
 impl fmt::Display for ExecMod {
@@ -181,7 +181,9 @@ pub fn get_commands() -> Result<CommandArg, io::Error> {
                     }
                 };
                 ExecMod::Certificate(Certificate {
-                    action: CertificateActions::See(CertificateToSee { name: file_name }),
+                    action: CertificateActions::See(CertificateToSee {
+                        file_path: file_name,
+                    }),
                 })
             }
             Some(("delete", _sub_matches)) => ExecMod::Certificate(Certificate {

@@ -48,6 +48,13 @@ pub fn read_pvt_key(path: &str) -> Result<PKey<Private>, io::Error> {
     Ok(key)
 }
 
+pub fn read_certificate(path_to_file: &str) -> Result<X509, io::Error> {
+    let contents_bin = fs::read_to_string(path_to_file)?;
+    let cert = X509::from_pem(contents_bin.as_bytes())?;
+
+    Ok(cert)
+}
+
 pub fn delete_certificate(path: &str) -> Result<(), io::Error> {
     let _ = fs::remove_file(path.to_owned() + FILE_NAME_CERT)?;
     Ok(())
