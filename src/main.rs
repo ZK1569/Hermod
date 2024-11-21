@@ -1,10 +1,11 @@
-use std::{io, process};
+use std::{fs::create_dir_all, io, process};
 
 use env_logger::Env;
 use log::{debug, error, info};
 use models::{client::Client, encrypt::Encrypt, file_write, server::Server};
 use utils::{
     commands::{self, CertificateActions},
+    config::Config,
     input, starter,
 };
 
@@ -32,6 +33,10 @@ fn main() {
 
     starter::start_message();
     debug!("Inputed commands : {}", command);
+
+    let config = Config::read();
+
+    let _ = create_dir_all(&(config.user_home_path.clone() + "/.config/hermod"));
 
     match command.execution_mod {
         commands::ExecMod::Server(server_info) => {
@@ -82,7 +87,6 @@ fn main() {
                         process::exit(1);
                     }
                 };
-                //  country / localisasty
                 let email = match input::input("Email ") {
                     Ok(u) => u,
                     Err(err) => {
@@ -122,10 +126,10 @@ fn main() {
                         }
                     };
 
-                if let Err(e) = file_write::save_certificate(cert) {
+                if let Err(e) = file_write::save_certificate(cert, &config.user_home_path) {
                     error!("Error will saving the user's certificate... {}", e);
                 }
-                if let Err(e) = file_write::save_pvt_key(key_pair) {
+                if let Err(e) = file_write::save_pvt_key(key_pair, &config.user_home_path) {
                     error!("Error will saving the user's private key... {}", e);
                 }
             }
