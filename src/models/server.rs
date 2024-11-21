@@ -8,6 +8,10 @@ use log::{debug, error, info, warn};
 use crate::{
     models::encrypt::Encrypt,
     types::communication::{Communication, PasswordState},
+    utils::{
+        self,
+        input::{self, input},
+    },
 };
 
 use super::network::Network;
@@ -92,15 +96,9 @@ impl Server {
     }
 
     fn choose_password() -> Result<([u8; 32], String), io::Error> {
-        // TODO: use Input.input() to get user password
-        println!("Choose a password that will ensure the security of the conversation: ");
-
-        let mut password = String::new();
-        io::stdin()
-            .read_line(&mut password)
-            .expect("Failed to read password");
-
-        password.pop(); // INFO: Delete the '\n' at the end
+        let password =
+            input::input("Choose a password that will ensure the security of the conversation: ")
+                .expect("Failed to read password");
 
         debug!("the password is >{}<", password);
 

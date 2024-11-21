@@ -1,7 +1,7 @@
 use std::{fs::create_dir_all, io, process};
 
 use env_logger::Env;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use models::{client::Client, encrypt::Encrypt, file_write, server::Server};
 use utils::{
     commands::{self, CertificateActions},
@@ -36,7 +36,7 @@ fn main() {
 
     let config = Config::read();
 
-    let _ = create_dir_all(&(config.user_home_path.clone() + "/.config/hermod"));
+    let _ = create_dir_all(&config.config_path);
 
     match command.execution_mod {
         commands::ExecMod::Server(server_info) => {
@@ -126,15 +126,22 @@ fn main() {
                         }
                     };
 
-                if let Err(e) = file_write::save_certificate(cert, &config.user_home_path) {
+                if let Err(e) = file_write::save_certificate(cert, &config.config_path) {
                     error!("Error will saving the user's certificate... {}", e);
                 }
-                if let Err(e) = file_write::save_pvt_key(key_pair, &config.user_home_path) {
+                if let Err(e) = file_write::save_pvt_key(key_pair, &config.config_path) {
                     error!("Error will saving the user's private key... {}", e);
                 }
             }
 
-            CertificateActions::Delete => {}
+            CertificateActions::Delete => {
+                if let Err(e) = file_write::delete_certificate(&config.config_path) {
+                    warn!("There was an error when trying to delete the certificate file... {e}");
+                }
+                if let Err(e) = file_write::delete_pvt_key(&config.config_path) {
+                    warn!("There cas an error when trying to delete the private key file... {e}");
+                }
+            }
             CertificateActions::See(_) => {}
         },
     }

@@ -1,21 +1,22 @@
 use home::home_dir;
-use log::{debug, trace, warn};
+use log::{debug, info, trace, warn};
 use serde::{Deserialize, Serialize};
 use std::{fs, io};
 
 #[derive(Debug)]
 pub struct Config {
     pub user_home_path: String,
+    pub config_path: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ConfigToml {
-    home_path: Option<ConfigFileSave>,
+    config_path: Option<ConfigFileSave>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ConfigFileSave {
-    dir: Option<String>,
+    home_path: Option<String>,
 }
 
 impl Config {
@@ -48,15 +49,15 @@ impl Config {
 
         let config_toml: ConfigToml = match toml::from_str(&content) {
             Ok(r) => r,
-            Err(_) => ConfigToml { home_path: None },
+            Err(_) => ConfigToml { config_path: None },
         };
 
         debug!("{:?}", config_toml);
 
-        let config_path: String = match config_toml.home_path {
+        let config_path: String = match config_toml.config_path {
             Some(file) => {
-                let config_path: String = file.dir.unwrap_or_else(|| {
-                    warn!("Missing field dir in table config_path.");
+                let config_path: String = file.home_path.unwrap_or_else(|| {
+                    warn!("Missing field home_path in table config_path.");
                     home_dir
                 });
 
@@ -69,7 +70,8 @@ impl Config {
         };
 
         Config {
-            user_home_path: config_path,
+            user_home_path: config_path.clone(),
+            config_path: config_path + "/.config/hermod",
         }
     }
 }
