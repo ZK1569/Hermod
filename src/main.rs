@@ -2,7 +2,13 @@ use std::{fs::create_dir_all, io, process};
 
 use env_logger::Env;
 use log::{debug, error, info, warn};
-use models::{client::Client, encrypt::Encrypt, file_write, server::Server};
+use models::{
+    api::{self, ServerApi},
+    client::Client,
+    encrypt::Encrypt,
+    file_write,
+    server::Server,
+};
 use utils::{
     commands::{self, CertificateActions},
     config::Config,
@@ -126,7 +132,18 @@ fn main() {
                         }
                     };
 
-                if let Err(e) = file_write::save_certificate(cert, &config.config_path) {
+                let result = match tokio::runtime::Runtime::new()
+                    .unwrap()
+                    .block_on(async { ServerApi::signe_certificate(&cert).await })
+                {
+                    Ok(c) => c,
+                    Err(err) => {
+                        error!("Error occurred during certificate signing: {}", err);
+                        process::exit(1);
+                    }
+                };
+
+                if let Err(e) = file_write::save_certificate(result.clone(), &config.config_path) {
                     error!("Error will saving the user's certificate... {}", e);
                 }
                 if let Err(e) = file_write::save_pvt_key(key_pair, &config.config_path) {

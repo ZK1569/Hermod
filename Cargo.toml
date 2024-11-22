@@ -12,6 +12,7 @@ toml = "0.8.19"
 clap = { version = "4.5.20", features = ["cargo", "derive"] }
 serde_json = "1.0.128"
 local-ip-address = "0.6.3"
-thiserror = "1.0.64"
 openssl = "0.10.68"
 home = "0.5.9"
+reqwest = { version = "0.11", features = ["multipart", "json"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

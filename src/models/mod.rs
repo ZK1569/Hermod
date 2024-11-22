@@ -1,3 +1,4 @@
+pub mod api;
 pub mod client;
 pub mod encrypt;
 pub mod file_write;

@@ -64,6 +64,3 @@ pub fn delete_pvt_key(path: &str) -> Result<(), io::Error> {
     let _ = fs::remove_file(path.to_owned() + FILE_NAME_PVT_KEY);
     Ok(())
 }
-
-// TODO: Read file x2
-// TODO: Delete file x2
