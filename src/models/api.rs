@@ -42,4 +42,31 @@ impl ServerApi {
             )));
         }
     }
+
+    pub async fn get_server_certificate() -> Result<X509, Box<dyn std::error::Error>> {
+        let client = reqwest::Client::new();
+        let response = client
+            .get("http://localhost:5001/certificate")
+            .send()
+            .await?;
+
+        if response.status() == StatusCode::OK {
+            let response_text = response.text().await?;
+            let server_cert = X509::from_pem(response_text.as_bytes())?;
+            return Ok(server_cert);
+        } else {
+            let error_message = format!(
+                "API response error: Status Code: {}, Message: {}",
+                response.status(),
+                response
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Unable to read response body".to_string())
+            );
+            return Err(Box::new(io::Error::new(
+                io::ErrorKind::InvalidData,
+                error_message,
+            )));
+        }
+    }
 }

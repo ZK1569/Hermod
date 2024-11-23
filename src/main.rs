@@ -132,7 +132,7 @@ fn main() {
                         }
                     };
 
-                let result = match tokio::runtime::Runtime::new()
+                let signed_cert = match tokio::runtime::Runtime::new()
                     .unwrap()
                     .block_on(async { ServerApi::signe_certificate(&cert).await })
                 {
@@ -143,11 +143,28 @@ fn main() {
                     }
                 };
 
-                if let Err(e) = file_write::save_certificate(result.clone(), &config.config_path) {
+                if let Err(e) = file_write::save_certificate(&signed_cert, &config.config_path) {
                     error!("Error will saving the user's certificate... {}", e);
                 }
                 if let Err(e) = file_write::save_pvt_key(key_pair, &config.config_path) {
                     error!("Error will saving the user's private key... {}", e);
+                }
+
+                let server_cert = match tokio::runtime::Runtime::new()
+                    .unwrap()
+                    .block_on(async { ServerApi::get_server_certificate().await })
+                {
+                    Ok(c) => c,
+                    Err(err) => {
+                        error!("An error occurred when requesting the server certificate... {err}");
+                        process::exit(1);
+                    }
+                };
+
+                if let Err(e) =
+                    file_write::save_server_certificate(&server_cert, &config.config_path)
+                {
+                    error!("Error will saving the user's certificate... {}", e);
                 }
             }
 

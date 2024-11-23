@@ -5,8 +5,9 @@ use std::{fs, io};
 
 const FILE_NAME_CERT: &str = "/self_cert.cert";
 const FILE_NAME_PVT_KEY: &str = "/pvt_key.pem";
+const FILE_SERVER_CERT: &str = "/server_cert.cert";
 
-pub fn save_certificate(cert: X509, path: &str) -> Result<(), io::Error> {
+pub fn save_certificate(cert: &X509, path: &str) -> Result<(), io::Error> {
     let cert_bin = cert.to_pem()?;
 
     let mut file = fs::OpenOptions::new()
@@ -14,6 +15,20 @@ pub fn save_certificate(cert: X509, path: &str) -> Result<(), io::Error> {
         .write(true)
         .truncate(true)
         .open(path.to_owned() + FILE_NAME_CERT)?;
+
+    let _ = file.write_all(&cert_bin);
+
+    Ok(())
+}
+
+pub fn save_server_certificate(cert: &X509, path: &str) -> Result<(), io::Error> {
+    let cert_bin = cert.to_pem()?;
+
+    let mut file = fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(path.to_owned() + FILE_SERVER_CERT)?;
 
     let _ = file.write_all(&cert_bin);
 
