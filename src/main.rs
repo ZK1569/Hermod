@@ -46,7 +46,11 @@ fn main() {
 
     match command.execution_mod {
         commands::ExecMod::Server(server_info) => {
-            let server = match Server::new(&server_info.port.to_string(), server_info.localhost) {
+            let server = match Server::new(
+                &server_info.port.to_string(),
+                server_info.localhost,
+                server_info.password,
+            ) {
                 Ok(s) => s,
                 Err(err) => {
                     error!("{}", err);
@@ -66,7 +70,11 @@ fn main() {
             }
         }
         commands::ExecMod::Client(client_info) => {
-            let client = Client::new(client_info.address, &client_info.port.to_string());
+            let client = Client::new(
+                client_info.address,
+                &client_info.port.to_string(),
+                client_info.password,
+            );
 
             match client.run_client() {
                 Ok(_) => info!("No errors encountered"),

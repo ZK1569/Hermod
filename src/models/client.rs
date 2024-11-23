@@ -11,16 +11,26 @@ use super::{encrypt::Encrypt, network::Network};
 
 pub struct Client {
     pub network: Network,
+    pub password_auth: bool,
 }
 
 impl Client {
-    pub fn new(address: Ipv4Addr, port: &str) -> Client {
+    pub fn new(address: Ipv4Addr, port: &str, password_auth: bool) -> Client {
         Client {
             network: Network::new(address, port),
+            password_auth,
         }
     }
 
     pub fn run_client(&self) -> Result<(), io::Error> {
+        if self.password_auth {
+            self.run_client_with_password_auth()
+        } else {
+            Ok(())
+        }
+    }
+
+    fn run_client_with_password_auth(&self) -> Result<(), io::Error> {
         let mut stream = match self.connect_to_server() {
             Ok(s) => s,
             Err(err) => return Err(io::Error::new(io::ErrorKind::ConnectionRefused, err)),

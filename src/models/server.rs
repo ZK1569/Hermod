@@ -8,10 +8,7 @@ use log::{debug, error, info, warn};
 use crate::{
     models::encrypt::Encrypt,
     types::communication::{Communication, PasswordState},
-    utils::{
-        self,
-        input::{self, input},
-    },
+    utils::input::{self},
 };
 
 use super::network::Network;
@@ -20,10 +17,11 @@ const MAX_PASSWORD_ERRORS: u8 = 3;
 
 pub struct Server {
     pub network: Network,
+    pub password_auth: bool,
 }
 
 impl Server {
-    pub fn new(port: &str, localhost: bool) -> Result<Server, io::Error> {
+    pub fn new(port: &str, localhost: bool, password_auth: bool) -> Result<Server, io::Error> {
         let ip = if localhost {
             Ipv4Addr::new(127, 0, 0, 1)
         } else {
@@ -37,14 +35,23 @@ impl Server {
         };
         Ok(Server {
             network: Network::new(ip, port),
+            password_auth,
         })
     }
 
-    pub fn start_server(&self) -> Result<TcpListener, io::Error> {
+    fn start_server(&self) -> Result<TcpListener, io::Error> {
         TcpListener::bind(self.network.get_fulladdress())
     }
 
     pub fn run_sever(&self) -> Result<(), io::Error> {
+        if self.password_auth {
+            self.run_server_with_password_auth()
+        } else {
+            self.run_server_with_certificate()
+        }
+    }
+
+    fn run_server_with_password_auth(&self) -> Result<(), io::Error> {
         let (hash, password) = match Server::choose_password() {
             Ok((h, p)) => (h, p),
             Err(_) => {
@@ -92,6 +99,10 @@ impl Server {
             }
         }
 
+        Ok(())
+    }
+
+    fn run_server_with_certificate(&self) -> Result<(), io::Error> {
         Ok(())
     }
 
