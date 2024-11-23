@@ -3,6 +3,8 @@ use std::io;
 use openssl::x509::X509;
 use reqwest::{multipart, StatusCode};
 
+const URL_API: &str = "https://ant-engaging-naturally.ngrok-free.app";
+
 pub struct ServerApi {}
 
 impl ServerApi {
@@ -18,7 +20,7 @@ impl ServerApi {
         let client = reqwest::Client::new();
 
         let response = client
-            .post("http://localhost:5001/signe")
+            .post(URL_API.to_owned() + "/signe")
             .multipart(form)
             .send()
             .await?;
@@ -46,7 +48,7 @@ impl ServerApi {
     pub async fn get_server_certificate() -> Result<X509, Box<dyn std::error::Error>> {
         let client = reqwest::Client::new();
         let response = client
-            .get("http://localhost:5001/certificate")
+            .get(URL_API.to_owned() + "/certificate")
             .send()
             .await?;
 
