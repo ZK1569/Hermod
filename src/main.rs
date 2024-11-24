@@ -2,13 +2,7 @@ use std::{fs::create_dir_all, io, process};
 
 use env_logger::Env;
 use log::{debug, error, info, warn};
-use models::{
-    api::{self, ServerApi},
-    client::Client,
-    encrypt::Encrypt,
-    file_write,
-    server::Server,
-};
+use models::{api::ServerApi, client::Client, encrypt::Encrypt, file_write, server::Server};
 use utils::{
     commands::{self, CertificateActions},
     config::Config,
@@ -43,6 +37,8 @@ fn main() {
     let config = Config::read();
 
     let _ = create_dir_all(&config.config_path);
+
+    debug!("config data {:?}", config);
 
     match command.execution_mod {
         commands::ExecMod::Server(server_info) => {

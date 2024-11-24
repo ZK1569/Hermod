@@ -6,9 +6,14 @@ use std::{
 
 use local_ip_address::local_ip;
 use log::{debug, error, trace, warn};
+use openssl::{
+    pkey::{PKey, Private},
+    x509::X509,
+};
 
 use crate::types::communication::{
-    Communication, CommunicationPassword, CommunicationText, PasswordState,
+    CertificateState, Communication, CommunicationCertificate, CommunicationPassword,
+    CommunicationText, PasswordState,
 };
 
 use super::encrypt::Encrypt;
@@ -108,6 +113,14 @@ impl Network {
         // INFO: The input thread is not checked
 
         Ok(())
+    }
+
+    pub fn communication_async(
+        mut stream: TcpStream,
+        client_cert: X509,
+        private_key: PKey<Private>,
+    ) -> Result<(), io::Error> {
+        todo!()
     }
 
     pub fn send_message(
@@ -239,6 +252,27 @@ impl Network {
         };
         let enum_network = Communication::CommunicationPassword(password_communication);
         let data: [u8; 0] = [0; 0];
+        let _ = Network::send_message(stream, &enum_network, &data)?;
+        Ok(())
+    }
+
+    pub fn certificate_response(
+        stream: &mut TcpStream,
+        validity: CertificateState,
+        user_certificate: Option<&X509>,
+    ) -> Result<(), io::Error> {
+        let certificate_communication = CommunicationCertificate {
+            certificate_state: validity,
+        };
+
+        let data: Vec<u8>;
+        if user_certificate.is_some() {
+            data = user_certificate.unwrap().to_pem()?
+        } else {
+            data = [0; 0].to_vec();
+        }
+
+        let enum_network = Communication::CommunicationCertificate(certificate_communication);
         let _ = Network::send_message(stream, &enum_network, &data)?;
         Ok(())
     }

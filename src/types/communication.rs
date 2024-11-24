@@ -12,7 +12,9 @@ pub enum Communication {
 pub struct CommunicationText {}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub struct CommunicationCertificate {}
+pub struct CommunicationCertificate {
+    pub certificate_state: CertificateState,
+}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct CommunicationFile {}
@@ -28,4 +30,11 @@ pub enum PasswordState {
     Correct,
     Incorrect,
     Failed,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub enum CertificateState {
+    Submition,
+    Correct,
+    Incorrect,
 }

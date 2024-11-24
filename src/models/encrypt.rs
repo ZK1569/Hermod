@@ -134,4 +134,9 @@ impl Encrypt {
 
         Ok((cert, key_pair))
     }
+
+    pub fn certificate_check_signature(server_cert: &X509, client_cert: &X509) -> bool {
+        let server_public_key = server_cert.public_key().unwrap();
+        client_cert.verify(&server_public_key).unwrap()
+    }
 }

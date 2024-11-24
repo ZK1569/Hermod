@@ -56,6 +56,13 @@ pub fn read_self_certificate(path: &str) -> Result<X509, io::Error> {
     Ok(cert)
 }
 
+pub fn read_server_certificate(path: &str) -> Result<X509, io::Error> {
+    let contents_bin = fs::read_to_string(path.to_owned() + FILE_SERVER_CERT)?;
+    let cert = X509::from_pem(contents_bin.as_bytes())?;
+
+    Ok(cert)
+}
+
 pub fn read_pvt_key(path: &str) -> Result<PKey<Private>, io::Error> {
     let contents_bin = fs::read_to_string(path.to_owned() + FILE_NAME_PVT_KEY)?;
     let key = PKey::private_key_from_pem(contents_bin.as_bytes())?;
