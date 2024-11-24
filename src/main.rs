@@ -90,21 +90,21 @@ fn main() {
         }
         commands::ExecMod::Certificate(cert_action) => match cert_action.action {
             CertificateActions::New => {
-                let username = match input::input("Full name ") {
+                let username = match input::input("Full name: ") {
                     Ok(u) => u,
                     Err(err) => {
                         error!("Error reading user input... {}", err);
                         process::exit(1);
                     }
                 };
-                let email = match input::input("Email ") {
+                let email = match input::input("Email: ") {
                     Ok(u) => u,
                     Err(err) => {
                         error!("Error reading user input... {}", err);
                         process::exit(1);
                     }
                 };
-                let country = match input::input("Country [CA]") {
+                let country = match input::input("Country [CA]: ") {
                     Ok(mut u) => {
                         if u.len() != 2 {
                             error!("Country name not valid, default used [CA]");
@@ -117,7 +117,7 @@ fn main() {
                         process::exit(1);
                     }
                 };
-                let locality = match input::input("Locality Name ") {
+                let locality = match input::input("Locality Name: ") {
                     Ok(u) => u,
                     Err(err) => {
                         error!("Error reading user input... {}", err);
