@@ -181,4 +181,14 @@ impl Encrypt {
         }
         Ok(None)
     }
+
+    pub fn get_email_on_certificate(cert: &X509) -> Result<Option<String>, ErrorStack> {
+        let subject_name = cert.subject_name();
+        let email_entries = subject_name.entries_by_nid(Nid::PKCS9_EMAILADDRESS);
+        for entry in email_entries {
+            let data = entry.data().as_utf8()?;
+            return Ok(Some(data.to_string()));
+        }
+        Ok(None)
+    }
 }

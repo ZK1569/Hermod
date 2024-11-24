@@ -88,7 +88,7 @@ impl Server {
 
         match listener.accept() {
             Ok((mut socket, addr)) => {
-                info!("A new customer ({}) is connected ...", addr);
+                info!("A new client ({}) is connected ...", addr);
                 match Server::check_password(&mut socket, hash) {
                     Ok(_) => {
                         match Network::communication(socket, key) {
@@ -130,16 +130,18 @@ impl Server {
 
         match listener.accept() {
             Ok((mut socket, addr)) => {
-                info!("A new customer ({}) is connected ...", addr);
+                info!("A new client ({}) is connected ...", addr);
                 match Server::check_certificate_and_get_user_cert(
                     &mut socket,
                     &server_cert,
                     &user_cert,
                 ) {
                     Ok(client_cert) => {
-                        match Network::communication_async(socket, client_cert, p_key) {
-                            Ok(_) => warn!("The client has left the conversation"),
-                            Err(err) => return Err(err),
+                        if Server::do_enable_connection(&client_cert)? {
+                            match Network::communication_async(socket, client_cert, p_key) {
+                                Ok(_) => warn!("The client has left the conversation"),
+                                Err(err) => return Err(err),
+                            }
                         }
                     }
                     Err(err) => {
@@ -261,5 +263,29 @@ impl Server {
                 return Err(err);
             }
         }
+    }
+
+    fn do_enable_connection(cert: &X509) -> Result<bool, io::Error> {
+        let cert_name = match Encrypt::get_name_on_certificate(cert)? {
+            Some(c) => c,
+            None => "no_name_found_on_certificate".to_owned(),
+        };
+
+        let cert_email = match Encrypt::get_email_on_certificate(cert)? {
+            Some(m) => m,
+            None => "no_email_found_on_certificate".to_owned(),
+        };
+
+        info!(
+            "Would you like to start communicating with >> {} <<",
+            cert_name
+        );
+        info!("Email: {}", cert_email);
+
+        let user_res = input::input("[Y/n]")?;
+        if user_res.starts_with('Y') || user_res.starts_with('y') {
+            return Ok(true);
+        }
+        Ok(false)
     }
 }
