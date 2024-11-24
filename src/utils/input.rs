@@ -1,4 +1,4 @@
-use std::io;
+use std::io::{self, Write};
 
 use log::warn;
 
@@ -6,7 +6,8 @@ pub fn input(message: &str) -> Result<String, io::Error> {
     let mut input = String::new();
 
     while input.len() <= 1 {
-        println!("{}", message);
+        print!("{} ", message);
+        io::stdout().flush().unwrap();
 
         io::stdin()
             .read_line(&mut input)
