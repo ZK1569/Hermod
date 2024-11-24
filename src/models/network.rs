@@ -122,6 +122,11 @@ impl Network {
     ) -> Result<(), io::Error> {
         let mut stream_clone = stream.try_clone()?;
 
+        let other_one_name = match Encrypt::get_name_on_certificate(&other_one_cert)? {
+            Some(n) => n,
+            None => "other".to_owned(),
+        };
+
         let handle_message = thread::spawn(move || -> Result<(), io::Error> {
             loop {
                 match Network::read_message(&mut stream) {
@@ -129,7 +134,7 @@ impl Network {
                         Communication::CommunicationText(_comm_text) => {
                             let message = Encrypt::decrypt_message_asym(&data, &private_key)?;
                             let message = String::from_utf8_lossy(&message).to_string();
-                            println!("other: {}", message)
+                            println!("{}: {}", other_one_name, message)
                         }
                         Communication::CommunicationFile(_comm_file) => {
                             // TODO: Download file

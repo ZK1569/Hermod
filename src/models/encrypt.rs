@@ -5,6 +5,7 @@ use openssl::{
     bn::{BigNum, MsbOption},
     error::ErrorStack,
     hash::{Hasher, MessageDigest},
+    nid::Nid,
     pkcs5::pbkdf2_hmac,
     pkey::{PKey, Private},
     rsa::{Padding, Rsa},
@@ -169,5 +170,15 @@ impl Encrypt {
     pub fn certificate_check_signature(server_cert: &X509, client_cert: &X509) -> bool {
         let server_public_key = server_cert.public_key().unwrap();
         client_cert.verify(&server_public_key).unwrap()
+    }
+
+    pub fn get_name_on_certificate(cert: &X509) -> Result<Option<String>, io::Error> {
+        let subject_name = cert.subject_name();
+        let name_entries = subject_name.entries_by_nid(Nid::COMMONNAME);
+        for entry in name_entries {
+            let data = entry.data().as_utf8()?;
+            return Ok(Some(data.to_string()));
+        }
+        Ok(None)
     }
 }
