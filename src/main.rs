@@ -168,7 +168,7 @@ fn main() {
                 if let Err(e) =
                     file_write::save_server_certificate(&server_cert, &config.config_path)
                 {
-                    error!("Error will saving the user's certificate... {}", e);
+                    error!("Error will saving the admin server's certificate... {}", e);
                 }
             }
 

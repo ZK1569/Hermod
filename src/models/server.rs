@@ -217,7 +217,7 @@ impl Server {
         match Network::read_message(stream) {
             Ok((communication, data)) => match communication {
                 Communication::CommunicationCertificate(_comm_certificate) => {
-                    debug!("Certificate received {:?}", data);
+                    debug!("Certificate received");
 
                     let client_cert = match X509::from_pem(&data) {
                         Ok(c) => c,

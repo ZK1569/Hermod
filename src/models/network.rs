@@ -117,7 +117,7 @@ impl Network {
 
     pub fn communication_async(
         mut stream: TcpStream,
-        client_cert: X509,
+        other_one_cert: X509,
         private_key: PKey<Private>,
     ) -> Result<(), io::Error> {
         todo!()
@@ -240,6 +240,17 @@ impl Network {
         let enum_network = Communication::CommunicationPassword(password_communication);
 
         let _ = Network::send_message(stream, &enum_network, hash)?;
+        Ok(())
+    }
+
+    pub fn send_certificate(stream: &mut TcpStream, cert: &X509) -> Result<(), io::Error> {
+        let certificate_communication = CommunicationCertificate {
+            certificate_state: CertificateState::Submition,
+        };
+        let enum_network = Communication::CommunicationCertificate(certificate_communication);
+
+        let data = cert.to_pem()?;
+        let _ = Network::send_message(stream, &enum_network, &data)?;
         Ok(())
     }
 

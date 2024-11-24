@@ -3,11 +3,15 @@ use std::{
     net::{Ipv4Addr, TcpStream},
 };
 
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
+use openssl::x509::X509;
 
-use crate::types::communication::{Communication, PasswordState};
+use crate::{
+    types::communication::{CertificateState, Communication, PasswordState},
+    utils::config::Config,
+};
 
-use super::{encrypt::Encrypt, network::Network};
+use super::{encrypt::Encrypt, file_write, network::Network};
 
 pub struct Client {
     pub network: Network,
@@ -26,7 +30,7 @@ impl Client {
         if self.password_auth {
             self.run_client_with_password_auth()
         } else {
-            Ok(())
+            self.run_client_with_certificate_auth()
         }
     }
 
@@ -52,6 +56,40 @@ impl Client {
         let key = Encrypt::derive_key_from_password(&password, 10000);
 
         match Network::communication(stream, key) {
+            Ok(_) => warn!("The server is disconnected"),
+            Err(err) => return Err(err),
+        }
+
+        Ok(())
+    }
+
+    fn run_client_with_certificate_auth(&self) -> Result<(), io::Error> {
+        let config = Config::read();
+
+        let admin_server_cert = file_write::read_server_certificate(&config.config_path)?;
+        let p_key = file_write::read_pvt_key(&config.config_path)?;
+        let user_cert = file_write::read_self_certificate(&config.config_path)?;
+
+        let mut stream = match self.connect_to_server() {
+            Ok(s) => s,
+            Err(err) => return Err(io::Error::new(io::ErrorKind::ConnectionRefused, err)),
+        };
+
+        info!("Server authentication");
+
+        let server_cert = match self.send_certificate(&mut stream, &user_cert) {
+            Ok(c) => c,
+            Err(err) => {
+                if err.kind() == io::ErrorKind::ConnectionRefused {
+                    return Err(err);
+                }
+                return Err(io::Error::new(io::ErrorKind::PermissionDenied, err));
+            }
+        };
+
+        // TODO: Can be cool to check the server cert also
+
+        match Network::communication_async(stream, server_cert, p_key) {
             Ok(_) => warn!("The server is disconnected"),
             Err(err) => return Err(err),
         }
@@ -117,5 +155,58 @@ impl Client {
             }
         }
         Ok(password)
+    }
+
+    fn send_certificate(
+        &self,
+        stream: &mut TcpStream,
+        user_cert: &X509,
+    ) -> Result<X509, io::Error> {
+        Network::send_certificate(stream, user_cert).expect("Failled to send certificate");
+
+        match Network::read_message(stream) {
+            Ok((communication, data)) => match communication {
+                Communication::CommunicationCertificate(comm_cert) => {
+                    debug!("{:?}", comm_cert);
+                    match comm_cert.certificate_state {
+                        CertificateState::Incorrect => {
+                            info!("Certificate incorrect");
+                            return Err(io::Error::new(
+                                io::ErrorKind::ConnectionRefused,
+                                "Connection Refused, invalid certificate",
+                            ));
+                        }
+                        CertificateState::Correct => {
+                            info!("Certificate correct");
+                            let server_cert = match X509::from_pem(&data) {
+                                Ok(c) => c,
+                                Err(e) => {
+                                    error!("Unable to read server's certificate {}", e);
+                                    return Err(io::Error::new(
+                                        io::ErrorKind::InvalidData,
+                                        "Unable to read server's certificate... ",
+                                    ));
+                                }
+                            };
+
+                            return Ok(server_cert);
+                        }
+                        _ => {
+                            return Err(io::Error::new(
+                                io::ErrorKind::Other,
+                                "Wrong data received, not a certificate",
+                            ))
+                        }
+                    }
+                }
+                _ => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        "Wrong data received, not a certificate",
+                    ))
+                }
+            },
+            Err(err) => return Err(err),
+        }
     }
 }
