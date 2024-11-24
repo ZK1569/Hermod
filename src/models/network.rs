@@ -6,9 +6,14 @@ use std::{
 
 use local_ip_address::local_ip;
 use log::{debug, error, trace, warn};
+use openssl::{
+    pkey::{PKey, Private},
+    x509::X509,
+};
 
 use crate::types::communication::{
-    Communication, CommunicationPassword, CommunicationText, PasswordState,
+    CertificateState, Communication, CommunicationCertificate, CommunicationPassword,
+    CommunicationText, PasswordState,
 };
 
 use super::encrypt::Encrypt;
@@ -83,6 +88,91 @@ impl Network {
             let mut data_tmp = Encrypt::encrypt_message(&message.as_bytes(), &key);
 
             Network::send_message(&mut stream_clone, &enum_network, &mut data_tmp).unwrap();
+        });
+
+        match handle_message.join() {
+            Ok(thread) => match thread {
+                Ok(_) => {}
+                Err(err) => {
+                    if err.kind() == io::ErrorKind::ConnectionAborted {
+                        return Ok(());
+                    } else if err.kind() == io::ErrorKind::InvalidData {
+                        return Err(err);
+                    }
+                    return Err(io::Error::new(io::ErrorKind::Other, err));
+                }
+            },
+            Err(_) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "An error has occurred on the thread",
+                ));
+            }
+        };
+
+        // INFO: The input thread is not checked
+
+        Ok(())
+    }
+
+    pub fn communication_async(
+        mut stream: TcpStream,
+        other_one_cert: X509,
+        private_key: PKey<Private>,
+    ) -> Result<(), io::Error> {
+        let mut stream_clone = stream.try_clone()?;
+
+        let handle_message = thread::spawn(move || -> Result<(), io::Error> {
+            loop {
+                match Network::read_message(&mut stream) {
+                    Ok((communication, data)) => match communication {
+                        Communication::CommunicationText(_comm_text) => {
+                            let message = Encrypt::decrypt_message_asym(&data, &private_key)?;
+                            let message = String::from_utf8_lossy(&message).to_string();
+                            println!("other: {}", message)
+                        }
+                        Communication::CommunicationFile(_comm_file) => {
+                            // TODO: Download file
+                            debug!("File received")
+                        }
+                        Communication::CommunicationCertificate(_comm_cert) => {
+                            // TODO: Check cert
+                            debug!("Cert received")
+                        }
+                        Communication::CommunicationPassword(_comm_password) => {
+                            debug!("Password received")
+                        }
+                    },
+                    Err(err) => {
+                        if err.kind() == io::ErrorKind::InvalidData {
+                            warn!("Message lost");
+                            continue;
+                        }
+                        return Err(err);
+                    }
+                }
+            }
+        });
+
+        let _handle_input = thread::spawn(move || -> Result<(), io::Error> {
+            loop {
+                let init_message = CommunicationText {};
+
+                let enum_network = Communication::CommunicationText(init_message);
+
+                let mut message = String::new();
+
+                io::stdin()
+                    .read_line(&mut message)
+                    .expect("failed to readline");
+
+                message.pop(); // INFO: Delete the '\n' at the end
+
+                let mut data_tmp =
+                    Encrypt::encrypt_message_asym(&message.as_bytes(), &other_one_cert)?;
+
+                Network::send_message(&mut stream_clone, &enum_network, &mut data_tmp).unwrap();
+            }
         });
 
         match handle_message.join() {
@@ -230,6 +320,17 @@ impl Network {
         Ok(())
     }
 
+    pub fn send_certificate(stream: &mut TcpStream, cert: &X509) -> Result<(), io::Error> {
+        let certificate_communication = CommunicationCertificate {
+            certificate_state: CertificateState::Submition,
+        };
+        let enum_network = Communication::CommunicationCertificate(certificate_communication);
+
+        let data = cert.to_pem()?;
+        let _ = Network::send_message(stream, &enum_network, &data)?;
+        Ok(())
+    }
+
     pub fn password_response(
         stream: &mut TcpStream,
         validity: PasswordState,
@@ -239,6 +340,27 @@ impl Network {
         };
         let enum_network = Communication::CommunicationPassword(password_communication);
         let data: [u8; 0] = [0; 0];
+        let _ = Network::send_message(stream, &enum_network, &data)?;
+        Ok(())
+    }
+
+    pub fn certificate_response(
+        stream: &mut TcpStream,
+        validity: CertificateState,
+        user_certificate: Option<&X509>,
+    ) -> Result<(), io::Error> {
+        let certificate_communication = CommunicationCertificate {
+            certificate_state: validity,
+        };
+
+        let data: Vec<u8>;
+        if user_certificate.is_some() {
+            data = user_certificate.unwrap().to_pem()?
+        } else {
+            data = [0; 0].to_vec();
+        }
+
+        let enum_network = Communication::CommunicationCertificate(certificate_communication);
         let _ = Network::send_message(stream, &enum_network, &data)?;
         Ok(())
     }
