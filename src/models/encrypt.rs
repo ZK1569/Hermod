@@ -7,7 +7,7 @@ use openssl::{
     hash::{Hasher, MessageDigest},
     pkcs5::pbkdf2_hmac,
     pkey::{PKey, Private},
-    rsa::Rsa,
+    rsa::{Padding, Rsa},
     symm::{Cipher, Crypter, Mode},
     x509::{
         extension::{BasicConstraints, KeyUsage, SubjectKeyIdentifier},
@@ -66,7 +66,7 @@ impl Encrypt {
         ciphertext
     }
 
-    pub fn decrypt_message(ciphertext: &[u8], key: &[u8; 32]) -> Vec<u8> {
+    pub fn decrypt_message(ciphertext: &[u8], key: &[u8]) -> Vec<u8> {
         let cipher = Cipher::aes_256_cbc();
         let mut decrypter = Crypter::new(cipher, Mode::Decrypt, key, None)
             .expect("Erreur d'initialisation du déchiffreur");
@@ -81,6 +81,37 @@ impl Encrypt {
 
         plaintext.truncate(count);
         plaintext
+    }
+
+    pub fn decrypt_message_asym(
+        ciphertext: &[u8],
+        private_key: &PKey<Private>,
+    ) -> Result<Vec<u8>, io::Error> {
+        let rsa = private_key.rsa()?;
+        let mut decrypted_message = vec![0; rsa.size() as usize];
+        let decrypted_len = rsa.private_decrypt(
+            &ciphertext,
+            &mut decrypted_message,
+            openssl::rsa::Padding::PKCS1,
+        )?;
+
+        decrypted_message.truncate(decrypted_len);
+
+        Ok(decrypted_message)
+    }
+
+    pub fn encrypt_message_asym(ciphertext: &[u8], cert: &X509) -> Result<Vec<u8>, io::Error> {
+        let public_key = cert.public_key()?;
+        let rsa = public_key.rsa()?;
+
+        let mut encrypted_message = vec![0; rsa.size() as usize];
+
+        let encrypted_len =
+            rsa.public_encrypt(ciphertext, &mut encrypted_message, Padding::PKCS1)?;
+
+        encrypted_message.truncate(encrypted_len);
+
+        Ok(encrypted_message)
     }
 
     pub fn mk_ca_cert(

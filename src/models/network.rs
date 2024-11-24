@@ -120,7 +120,84 @@ impl Network {
         other_one_cert: X509,
         private_key: PKey<Private>,
     ) -> Result<(), io::Error> {
-        todo!()
+        let mut stream_clone = stream.try_clone()?;
+
+        let handle_message = thread::spawn(move || -> Result<(), io::Error> {
+            loop {
+                match Network::read_message(&mut stream) {
+                    Ok((communication, data)) => match communication {
+                        Communication::CommunicationText(_comm_text) => {
+                            let message = Encrypt::decrypt_message_asym(&data, &private_key)?;
+                            let message = String::from_utf8_lossy(&message).to_string();
+                            println!("other: {}", message)
+                        }
+                        Communication::CommunicationFile(_comm_file) => {
+                            // TODO: Download file
+                            debug!("File received")
+                        }
+                        Communication::CommunicationCertificate(_comm_cert) => {
+                            // TODO: Check cert
+                            debug!("Cert received")
+                        }
+                        Communication::CommunicationPassword(_comm_password) => {
+                            debug!("Password received")
+                        }
+                    },
+                    Err(err) => {
+                        if err.kind() == io::ErrorKind::InvalidData {
+                            warn!("Message lost");
+                            continue;
+                        }
+                        return Err(err);
+                    }
+                }
+            }
+        });
+
+        let _handle_input = thread::spawn(move || -> Result<(), io::Error> {
+            loop {
+                let init_message = CommunicationText {};
+
+                let enum_network = Communication::CommunicationText(init_message);
+
+                let mut message = String::new();
+
+                io::stdin()
+                    .read_line(&mut message)
+                    .expect("failed to readline");
+
+                message.pop(); // INFO: Delete the '\n' at the end
+
+                let mut data_tmp =
+                    Encrypt::encrypt_message_asym(&message.as_bytes(), &other_one_cert)?;
+
+                Network::send_message(&mut stream_clone, &enum_network, &mut data_tmp).unwrap();
+            }
+        });
+
+        match handle_message.join() {
+            Ok(thread) => match thread {
+                Ok(_) => {}
+                Err(err) => {
+                    if err.kind() == io::ErrorKind::ConnectionAborted {
+                        return Ok(());
+                    } else if err.kind() == io::ErrorKind::InvalidData {
+                        return Err(err);
+                    }
+                    return Err(io::Error::new(io::ErrorKind::Other, err));
+                }
+            },
+            Err(_) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "An error has occurred on the thread",
+                ));
+            }
+        };
+
+        // INFO: The input thread is not checked
+
+        Ok(())
     }
 
     pub fn send_message(
