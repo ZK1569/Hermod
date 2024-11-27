@@ -8,7 +8,7 @@ use openssl::x509::X509;
 
 use crate::{
     types::communication::{CertificateState, Communication, PasswordState},
-    utils::config::Config,
+    utils::{config::Config, input::input},
 };
 
 use super::{encrypt::Encrypt, file_write, network::Network};
@@ -42,7 +42,6 @@ impl Client {
 
         info!("Connected to server");
 
-        println!("Please enter the conversation password: ");
         let password = match self.send_password(&mut stream) {
             Ok(p) => p,
             Err(err) => {
@@ -105,12 +104,7 @@ impl Client {
         let mut password = String::new();
         let mut password_error = 0;
         while password_error <= 3 {
-            password = String::new();
-            io::stdin()
-                .read_line(&mut password)
-                .expect("Failed to read password");
-
-            password.pop();
+            password = input("Please enter the conversation password:")?;
 
             let hash = Encrypt::hash(&password)?;
 

@@ -159,7 +159,7 @@ impl Server {
 
     fn choose_password() -> Result<([u8; 32], String), io::Error> {
         let password =
-            input::input("Choose a password that will ensure the security of the conversation: ")
+            input::input("Choose a password that will ensure the security of the conversation:")
                 .expect("Failed to read password");
 
         debug!("the password is >{}<", password);
