@@ -1,4 +1,5 @@
 use std::{
+    fmt::Write,
     io,
     net::{Ipv4Addr, TcpStream},
 };
@@ -54,6 +55,12 @@ impl Client {
 
         let key = Encrypt::derive_key_from_password(&password, 10000);
 
+        let mut hex_key = String::new();
+        for byte in key {
+            write!(hex_key, "{:02x}", byte).expect("Failed to write to string");
+        }
+        debug!("Key in hesadecimal: {}", hex_key);
+
         match Network::communication(stream, key) {
             Ok(_) => warn!("The server is disconnected"),
             Err(err) => return Err(err),
@@ -73,6 +80,18 @@ impl Client {
             Ok(s) => s,
             Err(err) => return Err(io::Error::new(io::ErrorKind::ConnectionRefused, err)),
         };
+
+        let mut hex_key = String::new();
+        for byte in p_key.private_key_to_pkcs8()? {
+            write!(hex_key, "{:02x}", byte).expect("Failed to write to string");
+        }
+        debug!("Private Key in hesadecimal: {}", hex_key);
+
+        let mut hex_key = String::new();
+        for byte in user_cert.public_key()?.public_key_to_der()? {
+            write!(hex_key, "{:02x}", byte).expect("Failed to write to string");
+        }
+        debug!("Private Key in hesadecimal: {}", hex_key);
 
         info!("Server authentication");
 

@@ -1,4 +1,5 @@
 use std::{
+    fmt::Write,
     io,
     net::{Ipv4Addr, TcpListener, TcpStream},
 };
@@ -71,7 +72,11 @@ impl Server {
 
         let key = Encrypt::derive_key_from_password(&password, 10000);
 
-        debug!("Key: {:?}", key);
+        let mut hex_key = String::new();
+        for byte in key {
+            write!(hex_key, "{:02x}", byte).expect("Failed to write to string");
+        }
+        debug!("Key in hesadecimal: {}", hex_key);
 
         let listener = match self.start_server() {
             Ok(r) => r,
@@ -122,6 +127,18 @@ impl Server {
                 return Err(io::Error::new(io::ErrorKind::ConnectionRefused, err));
             }
         };
+
+        let mut hex_key = String::new();
+        for byte in p_key.private_key_to_pkcs8()? {
+            write!(hex_key, "{:02x}", byte).expect("Failed to write to string");
+        }
+        debug!("Private Key in hesadecimal: {}", hex_key);
+
+        let mut hex_key = String::new();
+        for byte in user_cert.public_key()?.public_key_to_der()? {
+            write!(hex_key, "{:02x}", byte).expect("Failed to write to string");
+        }
+        debug!("Private Key in hesadecimal: {}", hex_key);
 
         info!(
             "Your server is running on address: {} port: {}",
