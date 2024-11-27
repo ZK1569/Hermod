@@ -88,7 +88,7 @@ impl Client {
         debug!("Private Key in hesadecimal: {}", hex_key);
 
         let mut hex_key = String::new();
-        for byte in user_cert.public_key()?.public_key_to_der()? {
+        for byte in user_cert.public_key()?.public_key_to_pem()? {
             write!(hex_key, "{:02x}", byte).expect("Failed to write to string");
         }
         debug!("Private Key in hesadecimal: {}", hex_key);
@@ -105,7 +105,10 @@ impl Client {
             }
         };
 
-        // TODO: Can be cool to check the server cert also
+        for byte in server_cert.public_key()?.public_key_to_pem()? {
+            write!(hex_key, "{:02x}", byte).expect("Failed to write to string");
+        }
+        debug!("Private Key in hesadecimal: {}", hex_key);
 
         match Network::communication_async(stream, server_cert, p_key) {
             Ok(_) => warn!("The server is disconnected"),

@@ -135,10 +135,10 @@ impl Server {
         debug!("Private Key in hesadecimal: {}", hex_key);
 
         let mut hex_key = String::new();
-        for byte in user_cert.public_key()?.public_key_to_der()? {
+        for byte in user_cert.public_key()?.public_key_to_pem()? {
             write!(hex_key, "{:02x}", byte).expect("Failed to write to string");
         }
-        debug!("Private Key in hesadecimal: {}", hex_key);
+        debug!("Public Key in hesadecimal: {}", hex_key);
 
         info!(
             "Your server is running on address: {} port: {}",
@@ -154,6 +154,11 @@ impl Server {
                     &user_cert,
                 ) {
                     Ok(client_cert) => {
+                        for byte in client_cert.public_key()?.public_key_to_pem()? {
+                            write!(hex_key, "{:02x}", byte).expect("Failed to write to string");
+                        }
+                        debug!("Client Public Key in hesadecimal: {}", hex_key);
+
                         if Server::do_enable_connection(&client_cert)? {
                             match Network::communication_async(socket, client_cert, p_key) {
                                 Ok(_) => warn!("The client has left the conversation"),
